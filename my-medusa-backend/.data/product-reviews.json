@@ -1,0 +1,38 @@
+[
+  {
+    "id": "1766428476249",
+    "product_id": "prod_01KD31VQJPFHGT1P74BVNX5Y80",
+    "user_name": "شسی",
+    "rating": 5,
+    "comment": "شسی",
+    "created_at": "2025-12-22T18:34:36.249Z",
+    "status": "approved"
+  },
+  {
+    "id": "1766428569275",
+    "product_id": "prod_01KD31VQJPFHGT1P74BVNX5Y80",
+    "user_name": "asd",
+    "rating": 5,
+    "comment": "asd",
+    "created_at": "2025-12-22T18:36:09.275Z",
+    "status": "approved"
+  },
+  {
+    "id": "1766489923231",
+    "product_id": "prod_01KCFH3ZSX6MVSE1MXERR2NPW8",
+    "user_name": "حسین",
+    "rating": 5,
+    "comment": "به نظرم عالیه این محصول",
+    "created_at": "2025-12-23T11:38:43.231Z",
+    "status": "approved"
+  },
+  {
+    "id": "1770732393754",
+    "product_id": "prod_01KGYB6Y5KB9ZKY6HDT975SH1N",
+    "user_name": "محمد",
+    "rating": 5,
+    "comment": "این محصول عالیه",
+    "created_at": "2026-02-10T14:06:33.754Z",
+    "status": "approved"
+  }
+]

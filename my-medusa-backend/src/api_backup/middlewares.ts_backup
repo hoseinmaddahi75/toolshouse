@@ -1,0 +1,39 @@
+import { defineMiddlewares } from "@medusajs/medusa";
+import { Request, Response, NextFunction } from "express";
+
+export default defineMiddlewares({
+  routes: [
+    // ۱. این بخش جدید است: دور زدن مشکل CORS برای سشن پرداخت
+    {
+      matcher: "/store/carts/:id/payment-sessions",
+      method: "OPTIONS", // فقط روی درخواست‌های پیش‌پرواز اجرا شو
+      middlewares: [
+        (req: Request, res: Response, next: NextFunction) => {
+          console.log("🚀 [MANUAL CORS] Handling OPTIONS for Payment Sessions");
+          
+          // دستی هدرهای CORS را ست می‌کنیم
+          res.setHeader("Access-Control-Allow-Origin", "http://localhost:3000");
+          res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+          res.setHeader("Access-Control-Allow-Headers", "Content-Type, x-publishable-api-key");
+          res.setHeader("Access-Control-Max-Age", "86400");
+          
+          // بلافاصله پاسخ موفق می‌دهیم تا مدوسا نتواند ارور بدهد
+          res.sendStatus(204);
+        },
+      ],
+    },
+    // ۲. همان لاگر قبلی برای بقیه درخواست‌ها
+    {
+      matcher: "/store/*",
+      middlewares: [
+        (req: Request, res: Response, next: NextFunction) => {
+          // فقط برای درخواست‌های غیر OPTIONS لاگ بگیر تا شلوغ نشود
+          if (req.method !== "OPTIONS") {
+            console.log(`\n📨 [REQ] ${req.method} ${req.originalUrl}`);
+          }
+          next();
+        },
+      ],
+    },
+  ],
+});
