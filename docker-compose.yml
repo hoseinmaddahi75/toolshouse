@@ -1,27 +1,21 @@
 version: '3.8'
-
 services:
-  # دیتابیس پستگرس
   db:
     image: postgres:15
     container_name: tooshouse-db
     restart: always
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: your_secure_password
+      POSTGRES_PASSWORD: ToosHouseDeployment2026
       POSTGRES_DB: medusa_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
 
-  # ردیس (برای کش و صف‌های مدوسا)
   redis:
     image: redis:alpine
     container_name: tooshouse-redis
     restart: always
 
-  # بک‌اِند مدوسا
   backend:
     build: ./my-medusa-backend
     container_name: tooshouse-backend
@@ -30,21 +24,16 @@ services:
       - db
       - redis
     environment:
-      - DATABASE_URL=postgres://postgres:your_secure_password@db:5432/medusa_db
-      - REDIS_URL=redis://redis:6379
-      - JWT_SECRET=something_very_secret
-      - COOKIE_SECRET=another_secret
-      - STORE_URL=https://your-domain.com
-      - ADMIN_URL=https://admin.your-domain.com
+      - DATABASE_URL=postgres://postgres:ToosHouseDeployment2026@tooshouse-db:5432/medusa_db
+      - REDIS_URL=redis://tooshouse-redis:6379
     ports:
       - "9000:9000"
 
-  # فرانت‌اِند نکست‌جی‌اس
   storefront:
     build:
       context: ./my-medusa-storefront
       args:
-        - NEXT_PUBLIC_MEDUSA_BACKEND_URL=https://api.your-domain.com
+        - NEXT_PUBLIC_MEDUSA_BACKEND_URL=https://api.toolshouse.ir
     container_name: tooshouse-storefront
     restart: always
     depends_on:
