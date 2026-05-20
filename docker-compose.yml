@@ -5,9 +5,9 @@ services:
     container_name: tooshouse-db
     restart: always
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ToosHouseDeployment2026
-      POSTGRES_DB: medusa_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -23,9 +23,16 @@ services:
     depends_on:
       - db
       - redis
+    env_file:
+      - ./my-medusa-backend/.env
     environment:
-      - DATABASE_URL=postgres://postgres:ToosHouseDeployment2026@tooshouse-db:5432/medusa_db
+      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@tooshouse-db:5432/${POSTGRES_DB}
       - REDIS_URL=redis://tooshouse-redis:6379
+      - STORE_CORS=${FRONTEND_URL}
+      - ADMIN_CORS=${ADMIN_URL}
+      - AUTH_CORS=${FRONTEND_URL},${ADMIN_URL}
+      - MEDUSA_BACKEND_URL=${BACKEND_URL}
+      - BACKEND_URL=${BACKEND_URL}
     ports:
       - "9000:9000"
 
@@ -33,11 +40,16 @@ services:
     build:
       context: ./my-medusa-storefront
       args:
-        - NEXT_PUBLIC_MEDUSA_BACKEND_URL=https://api.toolshouse.ir
+        - NEXT_PUBLIC_MEDUSA_BACKEND_URL=${BACKEND_URL}
     container_name: tooshouse-storefront
     restart: always
     depends_on:
       - backend
+    env_file:
+      - ./my-medusa-storefront/.env
+    environment:
+      - NEXT_PUBLIC_MEDUSA_BACKEND_URL=${BACKEND_URL}
+      - NEXT_PUBLIC_BASE_URL=${FRONTEND_URL}
     ports:
       - "3000:3000"
 
