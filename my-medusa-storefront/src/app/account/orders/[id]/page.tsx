@@ -11,6 +11,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers"; // برای دریافت توکن
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +39,7 @@ const getSmartStatusBadge = (order: any) => {
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const BASE_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+  const BASE_URL = MEDUSA_BACKEND_URL;
   const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
   
   // دریافت شناسه مشتری برای احراز هویت در API اختصاصی

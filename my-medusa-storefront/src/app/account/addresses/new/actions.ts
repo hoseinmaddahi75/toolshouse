@@ -3,9 +3,10 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 export async function addAddressAction(prevState: any, formData: FormData) {
-  const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+  const BACKEND_URL = MEDUSA_BACKEND_URL;
   // مطمئن شویم که کلید حتماً وجود دارد
   const API_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY;
 

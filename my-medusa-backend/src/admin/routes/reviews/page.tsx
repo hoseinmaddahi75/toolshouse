@@ -16,7 +16,7 @@ interface Review {
 const ReviewsPage = () => {
   const dialog = usePrompt() // برای تایید حذف
   const [reviews, setReviews] = useState<Review[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [, setIsLoading] = useState(true)
   const [isUploading, setIsUploading] = useState(false)
   
   // حالت ویرایش: اگر آیدی داشته باشد یعنی در حال ویرایشیم
@@ -33,7 +33,7 @@ const ReviewsPage = () => {
   const fetchReviews = async () => {
     setIsLoading(true)
     try {
-      const res = await fetch("http://localhost:9000/admin/reviews")
+      const res = await fetch("/admin/reviews")
       const data = await res.json()
       setReviews(data.reviews || [])
     } catch (err) { console.error(err) } 
@@ -55,7 +55,7 @@ const ReviewsPage = () => {
       // استفاده از API آپلود پیش‌فرض مدوسا
       // نکته: در حالت لوکال ممکن است نیاز به نصب پلاگین فایل باشد
       // اگر ارور داد، از لینک تستی استفاده کنید
-      const res = await fetch("http://localhost:9000/admin/custom-uploads", {
+      const res = await fetch("/admin/custom-uploads", {
         method: "POST",
         body: payload,
       })
@@ -101,8 +101,8 @@ const ReviewsPage = () => {
     e.preventDefault()
     
     const url = editingId 
-        ? `http://localhost:9000/admin/reviews/${editingId}` // آدرس ویرایش
-        : "http://localhost:9000/admin/reviews" // آدرس ساخت
+        ? `/admin/reviews/${editingId}` // آدرس ویرایش
+        : "/admin/reviews" // آدرس ساخت
 
     try {
       const res = await fetch(url, {
@@ -127,7 +127,7 @@ const ReviewsPage = () => {
     })
 
     if (confirmed) {
-        await fetch(`http://localhost:9000/admin/reviews/${id}`, { method: "DELETE" })
+        await fetch(`/admin/reviews/${id}`, { method: "DELETE" })
         fetchReviews()
     }
   }

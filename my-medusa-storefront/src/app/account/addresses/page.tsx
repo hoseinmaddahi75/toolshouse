@@ -4,12 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, Plus, Phone, Edit, Building2 } from "lucide-react";
 import Link from "next/link";
 import DeleteAddressButton from "./delete-button";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 // اجبار به رفرش شدن دیتا در هر بار لود
 export const dynamic = "force-dynamic";
 
 export default async function AddressesPage() {
-  const BASE_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+  const BASE_URL = MEDUSA_BACKEND_URL;
   const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
   
   // ۱. دریافت توکن مشتری

@@ -4,6 +4,8 @@ import { BlogPost } from "@/lib/data/blog";
 // 👇 ۱. اضافه کردن ایمپورت تابع ترجمه
 import { getCategoryLabel } from "@/lib/constants";
 
+export const dynamic = "force-dynamic";
+
 const LatestNews = ({ posts }: { posts: BlogPost[] }) => {
   if (!posts || posts.length === 0) return null;
 

@@ -1,4 +1,4 @@
-// src/lib/data/reviews.ts
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 export interface Review {
   id: string;
@@ -12,7 +12,7 @@ export interface Review {
 
 export async function getReviews(): Promise<Review[]> {
   try {
-    const res = await fetch("http://localhost:9000/store/reviews", {
+    const res = await fetch(`${MEDUSA_BACKEND_URL}/store/reviews`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

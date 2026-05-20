@@ -21,6 +21,7 @@ import {
 import { SwatchIcon } from "@heroicons/react/24/outline";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 // تعریف تایپ برای آیتم‌های منو
 type MenuItem = {
@@ -34,7 +35,7 @@ type MenuItem = {
 export default function AdminSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const BASE_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+  const BASE_URL = MEDUSA_BACKEND_URL;
 
   // استیت برای ذخیره نام منوی باز شده
   const [openMenu, setOpenMenu] = useState<string | null>(null);

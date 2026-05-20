@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useCartStore } from "@/lib/store";
 import { formatPrice } from "@/lib/medusa-client";
 import { 
-  placeOrderAction, 
-  retrieveShippingOptions, 
   updateCartAddressAction, 
+  retrieveShippingOptions, 
   getCurrentCustomerAction,
   setShippingMethodAction, 
+  ensureCartOwnership
 } from "./actions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,12 +17,14 @@ import { Label } from "@/components/ui/label";
 import { Loader2, CheckCircle, MapPin, CreditCard, Truck, Home, Plus, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ensureCartOwnership } from "./actions";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
+// تنظیمات صفحه
+export const dynamic = "force-dynamic";
 
-// تابع کمکی برای دریافت سبد خرید
+// --- توابع کمکی ---
 async function getCartDetails(cartId: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+  const baseUrl = MEDUSA_BACKEND_URL;
   const apiKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
   try {
     const res = await fetch(`${baseUrl}/store/carts/${cartId}?fields=+payment_collection.payment_sessions`, {
@@ -35,7 +37,8 @@ async function getCartDetails(cartId: string) {
   } catch (error) { return null; }
 }
 
-export default function CheckoutPage() {
+// --- کامپوننت اصلی محتوا (منطق اصلی اینجاست) ---
+function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { cartId, items, initializeCart } = useCartStore();
@@ -49,7 +52,7 @@ export default function CheckoutPage() {
   
   // استیت‌های فرم
   const [email, setEmail] = useState("");
-  const [emailError, setEmailError] = useState(""); // برای نمایش خطای فارسی ایمیل
+  const [emailError, setEmailError] = useState("");
 
   const [shippingAddress, setShippingAddress] = useState({
     first_name: "",
@@ -72,20 +75,18 @@ export default function CheckoutPage() {
     const init = async () => {
       if (!cartId) await initializeCart();
       const currentCartId = cartId || localStorage.getItem("medusa_cart_id");
-    if (currentCartId) {
-          // 🟢 گام طلایی: همین اول کار، سبد را به کاربر وصل کن
+      
+      if (currentCartId) {
           await ensureCartOwnership(currentCartId);
       }
+
       try {
         const authCustomer = await getCurrentCustomerAction();
         if (authCustomer) {
             setCustomer(authCustomer);
-            // اگر ایمیل در پروفایل بود، ست کن
             if (authCustomer.email) setEmail(authCustomer.email);
             
-            // آدرس پیش‌فرض
             if (authCustomer.addresses?.length > 0) {
-                // اینجا ایمیل را تغییر نمی‌دهیم، فقط آدرس را پر می‌کنیم
                 handleSelectSavedAddress(authCustomer.addresses[0], false); 
             }
         }
@@ -94,7 +95,6 @@ export default function CheckoutPage() {
             const data = await getCartDetails(currentCartId);
             if (data?.cart) {
                 setCurrencyCode(data.cart.region.currency_code);
-                // اگر ایمیل قبلاً در سبد خرید ثبت شده بود، آن را هم بیاور
                 if (data.cart.email && !authCustomer?.email) {
                     setEmail(data.cart.email);
                 }
@@ -121,7 +121,6 @@ export default function CheckoutPage() {
     }
   }, [searchParams, router]);
 
-  // نسخه اصلاح شده: بدون قرمز شدن پیش‌فرض
   const handleSelectSavedAddress = (addr: any, showToast = true) => {
     setShippingAddress({
         first_name: addr.first_name || "",
@@ -133,15 +132,11 @@ export default function CheckoutPage() {
         phone: addr.phone || "",
     });
     
-    // اگر ایمیل در پروفایل هست و فیلد خالیه، پرش کن
     if (!email && customer?.email) {
         setEmail(customer.email);
     }
     
-    // 🟢 تغییر مهم: همیشه ارور را پاک کن (پیش‌فرض قرمز نباشد)
-    // ارور فقط وقتی دکمه ادامه را زد و ایمیل نداشت ظاهر می‌شود
     setEmailError("");
-
     if (showToast) toast.info("آدرس انتخاب شد");
   };
 
@@ -157,30 +152,24 @@ export default function CheckoutPage() {
       });
   };
 
-  // تغییر ایمیل دستی
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       setEmail(e.target.value);
       if (e.target.value.trim().length > 0) {
-          setEmailError(""); // حذف ارور وقتی کاربر تایپ می‌کند
+          setEmailError(""); 
       }
   };
 
   const handleSubmitAddress = async () => {
     if (!cartId) return;
 
-    // 🔴 اعتبارسنجی فقط اینجا انجام می‌شود (هنگام کلیک)
     if (!email || email.trim() === "") {
-        setEmailError("لطفاً ایمیل خود را وارد کنید"); // اینجا قرمز می‌شود
+        setEmailError("لطفاً ایمیل خود را وارد کنید");
         toast.error("وارد کردن ایمیل الزامی است");
-        
-        // اسکرول به بالا تا کاربر فیلد قرمز را ببیند (اختیاری)
         const emailInput = document.getElementById("email-input");
         if(emailInput) emailInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        
         return;
     }
     
-    // اعتبارسنجی ساده فرمت ایمیل
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
         setEmailError("فرمت ایمیل صحیح نیست.");
@@ -287,8 +276,6 @@ export default function CheckoutPage() {
             <CardContainer active={step === 1} done={step > 1} title="۱. اطلاعات ارسال" icon={<MapPin className="w-5 h-5"/>}>
                 {step === 1 ? (
                     <div className="space-y-4">
-                        
-                        {/* بخش انتخاب آدرس ذخیره شده */}
                         {customer?.addresses?.length > 0 && (
                             <div className="mb-6 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
                                 <Label className="flex items-center gap-2 mb-3 text-blue-800">
@@ -331,13 +318,11 @@ export default function CheckoutPage() {
                             </div>
                         )}
 
-                        {/* فیلدهای فرم */}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1"><Label>نام <span className="text-red-500">*</span></Label><Input value={shippingAddress.first_name} onChange={(e) => setShippingAddress({...shippingAddress, first_name: e.target.value})} /></div>
                             <div className="space-y-1"><Label>نام خانوادگی <span className="text-red-500">*</span></Label><Input value={shippingAddress.last_name} onChange={(e) => setShippingAddress({...shippingAddress, last_name: e.target.value})} /></div>
                         </div>
                         
-                        {/* 🔴 فیلد ایمیل با مدیریت خطا 🔴 */}
                         <div className="space-y-1">
                             <Label className="flex justify-between">
                                 <span>ایمیل <span className="text-red-500">*</span></span>
@@ -484,9 +469,26 @@ export default function CheckoutPage() {
   );
 }
 
+// --- کامپوننت پوششی (Wrapper) برای رفع ارور بیلد ---
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={
+        <div className="flex h-screen items-center justify-center">
+            <Loader2 className="animate-spin text-blue-600 w-10 h-10" />
+        </div>
+    }>
+        <CheckoutContent />
+    </Suspense>
+  );
+}
+
 function CardContainer({ children, active, done, title, icon }: any) {
     return (
-        <div className={`bg-white rounded-2xl border transition-all duration-500 ${active ? "shadow-lg ring-1 ring-blue-100 scale-100 opacity-100" : "opacity-80 scale-[0.99] grayscale-[0.5]"}`}>
+        <div className={`bg-white rounded-2xl border transition-all duration-500 
+            ${active ? "shadow-lg ring-1 ring-blue-100 scale-100 opacity-100" : ""} 
+            ${!active && !done ? "opacity-50 grayscale" : ""} 
+            ${!active && done ? "opacity-90 bg-gray-50/50" : ""}
+        `}>
             <div className={`p-5 flex items-center justify-between border-b ${active ? "bg-white" : "bg-gray-50"}`}>
                 <div className="flex items-center gap-3">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${done ? "bg-green-500 text-white" : active ? "bg-blue-600 text-white" : "bg-gray-300 text-gray-500"}`}>
@@ -495,7 +497,9 @@ function CardContainer({ children, active, done, title, icon }: any) {
                     <h2 className={`font-bold text-lg ${!active && "text-gray-500"}`}>{title}</h2>
                 </div>
             </div>
-            <div className={`p-6 ${!active && "hidden"}`}>
+            
+            {/* اصلاحیه: محتوا فقط وقتی مخفی شود که نه فعال است و نه تمام شده */}
+            <div className={`p-6 transition-all duration-300 ${(!active && !done) ? "hidden" : "block"}`}>
                 {children}
             </div>
         </div>

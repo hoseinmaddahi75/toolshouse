@@ -2,8 +2,10 @@
 
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
-const BASE_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+
+const BASE_URL = MEDUSA_BACKEND_URL;
 
 // --- تابع کمکی احراز هویت ---
 async function getAuthHeaders() {

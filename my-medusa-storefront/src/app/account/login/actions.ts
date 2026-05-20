@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 export async function login(_currentState: unknown, formData: FormData) {
   const email = formData.get("email") as string;
@@ -16,7 +17,7 @@ export async function login(_currentState: unknown, formData: FormData) {
   let isSuccess = false;
 
   try {
-    const medusaUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+    const medusaUrl = MEDUSA_BACKEND_URL;
     // ✅ اصلاح نام متغیر محیطی طبق فایل env شما
     const publishableApiKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY;
 

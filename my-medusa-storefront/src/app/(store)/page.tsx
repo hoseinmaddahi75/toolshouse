@@ -1,8 +1,10 @@
-export const dynamic = 'force-dynamic';
 import { medusaClient, formatPrice } from "@/lib/medusa-client";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+
+export const dynamic = "force-dynamic";
+
 
 export default async function HomePage() {
   // دریافت لیست محصولات

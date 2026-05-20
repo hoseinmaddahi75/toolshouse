@@ -39,32 +39,41 @@ export default function PostForm({ categories, initialData }: PostFormProps) {
     }
   };
 
-  const handleSubmit = async (formData: FormData) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault(); // 👈 حیاتی: جلوگیری از رفرش صفحه یا رفتار عجیب مرورگر
     setLoading(true);
     
-    // اضافه کردن دستی محتوای ادیتور به فرم‌دیتا
-    formData.append("content", content);
-    formData.append("category", selectedCategory);
-    
-    // اگر در حالت ویرایش هستیم، تصویر قبلی را نگه داریم مگر اینکه عوض شده باشد
-    if (initialData?.image) {
-        formData.append("existing_image", initialData.image);
-    }
+    try {
+        // ساختن فرم‌دیتا به صورت دستی از روی تگ فرم
+        const formData = new FormData(e.currentTarget);
 
-    const isEdit = !!initialData;
-    const result = await savePostAction(formData, isEdit, initialData?.id);
+        // اضافه کردن دستی محتوای ادیتور به فرم‌دیتا
+        formData.append("content", content);
+        formData.append("category", selectedCategory);
+        
+        // اگر در حالت ویرایش هستیم، تصویر قبلی را نگه داریم مگر اینکه عوض شده باشد
+        if (initialData?.image) {
+            formData.append("existing_image", initialData.image);
+        }
 
-    if (result?.error) {
-        toast.error(result.error);
+        const isEdit = !!initialData;
+        const result = await savePostAction(formData, isEdit, initialData?.id);
+
+        if (result?.error) {
+            toast.error(result.error);
+        } else {
+            toast.success(isEdit ? "پست ویرایش شد" : "پست منتشر شد");
+            // ریدایرکت خودکار انجام میشه
+        }
+    } catch (error) {
+        console.error("🚨 خطای گیر افتاده در فرم:", error);
+        toast.error("خطای ارتباط با سرور! کنسول را ببینید.");
+    } finally {
         setLoading(false);
-    } else {
-        toast.success(isEdit ? "پست ویرایش شد" : "پست منتشر شد");
-        // ریدایرکت خودکار انجام میشه
     }
   };
-
   return (
-    <form action={handleSubmit}>
+    <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             {/* ستون اصلی (چپ) */}

@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { UserCog, ShieldAlert } from "lucide-react";
 import ProfileForm from "./profile-form";
 import LogoutButton from "@/components/store/logout-button";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProfilePage() {
-  const BASE_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+  const BASE_URL = MEDUSA_BACKEND_URL;
   const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
 
   // 1. خواندن شناسه مشتری از کوکی

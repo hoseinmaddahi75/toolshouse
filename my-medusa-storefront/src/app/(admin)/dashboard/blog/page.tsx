@@ -9,11 +9,12 @@ import { Plus, FileText, Edit, Calendar, Eye, AlertTriangle } from "lucide-react
 import { Badge } from "@/components/ui/badge";
 import DeletePostButton from "@/components/admin/delete-post-button";
 import { getCategoryLabel } from "@/lib/constants";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminBlogPage() {
-  const BASE_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+  const BASE_URL = MEDUSA_BACKEND_URL;
   
   // ۱. دریافت توکن ادمین از کوکی‌ها
   const cookieStore = await cookies();

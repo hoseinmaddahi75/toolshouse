@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 interface ProductActionsProps {
   id: string;
@@ -14,7 +15,7 @@ interface ProductActionsProps {
 export default function ProductActions({ id }: ProductActionsProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const BASE_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+  const BASE_URL = MEDUSA_BACKEND_URL;
 
   const handleDelete = async () => {
     // تاییدیه ساده از کاربر

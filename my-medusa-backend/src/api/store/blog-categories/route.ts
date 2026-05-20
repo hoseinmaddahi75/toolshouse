@@ -1,12 +1,10 @@
-// مسیر: src/api/store/blog-categories/route.ts
 import type { Request, Response } from "express";
 
 export async function GET(req: Request, res: Response) {
   try {
-    const PostService = (req as any).scope.resolve("PostService");
+    const postService = (req as any).scope.resolve("postService");
 
-    // فراخوانی متد جدیدی که اضافه کردیم
-    const categories = await PostService.listCategories();
+    const categories = await postService.listCategories();
 
     res.json({ categories });
   } catch (error) {

@@ -1,6 +1,7 @@
 // src/app/(admin)/dashboard/orders/page.tsx
 import { cookies } from "next/headers";
 import OrdersTable from "@/components/admin/orders-table"; // ایمپورت کامپوننت جدید
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +9,7 @@ export const dynamic = "force-dynamic";
 async function getOrders() {
   const cookieStore = await cookies();
   const token = cookieStore.get("_medusa_admin_token")?.value;
-  const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://127.0.0.1:9000";
+const backendUrl = MEDUSA_BACKEND_URL;
 
   if (!token) return { orders: [], count: 0 };
 

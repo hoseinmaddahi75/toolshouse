@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie"; // مطمئن شو نصب است
 import { Loader2 } from "lucide-react";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 type CustomerProps = {
   customer: {
@@ -30,7 +31,7 @@ export default function ProfileForm({ customer }: CustomerProps) {
     setLoading(true);
     setMsg(null);
 
-    const BASE_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+    const BASE_URL = MEDUSA_BACKEND_URL;
     const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
     const customerId = Cookies.get("_medusa_jwt"); // دریافت شناسه از کوکی
 

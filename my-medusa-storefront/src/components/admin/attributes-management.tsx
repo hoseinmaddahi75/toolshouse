@@ -8,6 +8,7 @@ import {
   Plus, Trash2, Edit2, Loader2, X, Layers, Save 
 } from "lucide-react";
 import { toast } from "sonner";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 // تایپ‌ها
 type AttributeValue = { id: string; value: string };
@@ -17,7 +18,7 @@ type Attribute = { id: string; title: string; values: AttributeValue[]; };
 export default function AttributesManagement({ token }: { token: string }) {
   const [loading, setLoading] = useState(true);
   const [attributes, setAttributes] = useState<Attribute[]>([]);
-  const BASE_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+  const BASE_URL = MEDUSA_BACKEND_URL;
 
   // هدر احراز هویت
   const authHeaders = {

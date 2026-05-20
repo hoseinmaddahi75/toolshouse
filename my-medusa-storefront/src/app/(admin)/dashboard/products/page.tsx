@@ -7,6 +7,7 @@ import ProductActions from "@/components/admin/product-actions";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import ProductToolbar from "@/components/admin/products/product-toolbar"; // 👈 ایمپورت کامپوننت جدید
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,7 @@ interface PageProps {
 async function getAdminProducts(page: number, limit: number, query: string, order: string) {
   const cookieStore = await cookies();
   const token = cookieStore.get("_medusa_admin_token")?.value;
-  const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://127.0.0.1:9000";
+const backendUrl = MEDUSA_BACKEND_URL;
 
   if (!token) return { products: [], count: 0 };
 

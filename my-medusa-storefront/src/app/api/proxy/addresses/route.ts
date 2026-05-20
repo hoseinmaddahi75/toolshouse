@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,9 +14,7 @@ export async function POST(req: NextRequest) {
     // 2. دریافت هدر Authorization (اگر فرانت فرستاده باشد)
     const authHeader = req.headers.get("authorization");
 
-    // 3. آدرس بک‌ند (بدون تغییر به 127.0.0.1)
-    // ⚠️ نکته مهم: کوکی‌های localhost فقط روی localhost کار می‌کنند.
-    const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+    const backendUrl = MEDUSA_BACKEND_URL;
     const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY;
 
     console.log(`📤 [Proxy] Sending to: ${backendUrl}/store/customers/me/addresses`);

@@ -1,0 +1,16 @@
+.cache
+.git
+.gitignore
+.env
+.env.test
+.env.template
+.vscode
+.github
+uploads
+.uploads
+static
+*.tar
+*.zip
+*.sql
+*.log
+*.tar.gz

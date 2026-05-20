@@ -1,9 +1,10 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 export async function registerCustomerAction(formData: any) {
-  const BASE_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+  const BASE_URL = MEDUSA_BACKEND_URL;
   const API_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY;
 
   if (!API_KEY) return { success: false, error: "تنظیمات API Key ناقص است." };

@@ -1,10 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input"; // یا کامپوننت Input خودتان
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
-const BASE_URL = "http://localhost:9000"; // آدرس بک‌ند
+const BASE_URL = MEDUSA_BACKEND_URL;
 
 export default function ResourcesPage() {
   // --- State برای راهنمای سایز ---

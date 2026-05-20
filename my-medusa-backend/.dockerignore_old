@@ -1,0 +1,10 @@
+node_modules
+.git
+.next
+.medusa
+dist
+build
+uploads
+data
+*.db
+*.log

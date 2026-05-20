@@ -1,8 +1,9 @@
 "use server";
 
 import { cookies } from "next/headers"; // 👈 اضافه کردن این خط
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
-const BASE_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+const BASE_URL = MEDUSA_BACKEND_URL;
 
 // ✅ تابع کمکی هوشمند برای دریافت توکن
 async function getAuthToken() {

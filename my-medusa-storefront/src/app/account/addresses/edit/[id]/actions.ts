@@ -3,9 +3,10 @@
 import { getAuthHeaders } from "@/lib/data-service";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 export async function editAddressAction(addressId: string, prevState: any, formData: FormData) {
-  const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+  const BACKEND_URL = MEDUSA_BACKEND_URL;
   const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
   
   const authHeaders = await getAuthHeaders();

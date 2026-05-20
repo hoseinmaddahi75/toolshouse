@@ -1,12 +1,13 @@
 import { cookies } from "next/headers";
 import EditAddressForm from "./edit-form"; // 👈 مسیر درست: همین پوشه
 import { notFound } from "next/navigation";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
 export default async function EditAddressPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const BASE_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+  const BASE_URL = MEDUSA_BACKEND_URL;
   const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
   
   const cookieStore = await cookies();

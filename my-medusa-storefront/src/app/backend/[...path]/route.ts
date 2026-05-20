@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
-// آدرس بک‌اند مدوسا
-const MEDUSA_URL = "http://127.0.0.1:9000";
+const BACKEND_URL = MEDUSA_BACKEND_URL;
 
 async function handler(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   // ۱. استخراج مسیر (مثلاً store/carts/...)
   const resolvedParams = await params;
   const path = resolvedParams.path.join("/");
   const query = req.nextUrl.search; // کوئری‌ها را هم نگه می‌داریم
-  const targetUrl = `${MEDUSA_URL}/${path}${query}`;
+  const targetUrl = `${BACKEND_URL}/${path}${query}`;
 
   // ۲. آماده‌سازی هدرها
   const headers = new Headers(req.headers);

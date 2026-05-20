@@ -17,6 +17,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 // --- تایپ‌ها ---
 type ProductImage = { id?: string; url: string; isThumbnail: boolean; };
@@ -33,7 +34,7 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const BASE_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+  const BASE_URL = MEDUSA_BACKEND_URL;
 
   // هدر احراز هویت برای تمام درخواست‌ها
   const authHeaders = {

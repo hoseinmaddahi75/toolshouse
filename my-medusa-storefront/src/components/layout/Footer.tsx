@@ -7,10 +7,12 @@ import {
   MapPinIcon, 
   ClockIcon 
 } from "@heroicons/react/24/outline";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
+
 
 async function getFooterCategories() {
   try {
-    const res = await fetch("http://localhost:9000/store/product-categories", {
+    const res = await fetch(`${MEDUSA_BACKEND_URL}/store/product-categories`, {
       next: { revalidate: 3600 },
       headers: {
         "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY!,

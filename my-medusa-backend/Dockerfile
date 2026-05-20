@@ -1,19 +1,8 @@
-# Dockerfile for MedusaJS Backend
 FROM node:20-slim
-
 WORKDIR /app
 
-# نصب ابزارهای لازم برای بیلد
-RUN apt-get update && apt-get install -y python3 make g++ 
-
-COPY package*.json ./
-RUN npm install --frozen-lockfile
-
+# کپی کردن تمام فایل‌ها، پکیج‌ها و بیلدهای آماده‌ی لپ‌تاپت
 COPY . .
 
-# بیلد کردن پروژه
-RUN npm run build
-
 EXPOSE 9000
-
-CMD ["npx", "medusa", "start"]
+CMD ["npm", "run", "start"]

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 export async function POST(req: NextRequest) {
   try {
@@ -9,10 +10,8 @@ export async function POST(req: NextRequest) {
     const cookieStore = await cookies();
     const cookieHeader = cookieStore.getAll().map((c) => `${c.name}=${c.value}`).join('; ');
     
-    // تنظیم آدرس بک‌ند با اصلاح localhost
     const envBackend = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL;
-    let backendUrl = envBackend || "http://127.0.0.1:9000";
-    if (backendUrl.includes("localhost")) backendUrl = backendUrl.replace("localhost", "127.0.0.1");
+    const backendUrl = MEDUSA_BACKEND_URL;
 
     // 🎯 آدرس طلایی (کپی شده از پنل ادمین شما)
     // درخواست کل سفارش با فیلد مخصوص لیبل‌ها

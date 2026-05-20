@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 export async function POST() {
   const cookieStore = await cookies();
@@ -11,7 +12,7 @@ export async function POST() {
   cookieStore.delete("_medusa_admin_token");
 
   // 3. درخواست به مدوسا برای کشتن سشن (اختیاری ولی خوب)
-  const BASE_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+  const BASE_URL = MEDUSA_BACKEND_URL;
   try {
     await fetch(`${BASE_URL}/auth/session`, {
       method: "DELETE",

@@ -18,6 +18,7 @@ import {
 import CategorySelector from "@/components/admin/category-selector";
 import RichTextEditor from "@/components/admin/rich-text-editor";
 import { toast } from "sonner";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 // --- تایپ‌ها ---
 type GlobalAttribute = { id: string; title: string; values: { id: string; value: string }[]; };
@@ -35,7 +36,7 @@ export default function CreateProductForm({ token }: { token: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [fetchingDefaults, setFetchingDefaults] = useState(true);
-  const BASE_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+  const BASE_URL = MEDUSA_BACKEND_URL;
 
   // هدر احراز هویت برای تمام درخواست‌ها
   const authHeaders = {

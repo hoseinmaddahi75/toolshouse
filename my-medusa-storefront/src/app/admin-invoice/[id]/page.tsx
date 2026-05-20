@@ -1,9 +1,10 @@
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 import { cookies } from "next/headers";
 import { formatPrice } from "@/lib/medusa-client";
 import PrintButton from "@/components/admin/print-button";
 
 async function getOrderData(id: string) {
-  const BASE_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+  const BASE_URL = MEDUSA_BACKEND_URL;
   const cookieStore = await cookies();
   const token = cookieStore.get("_medusa_admin_token")?.value;
 

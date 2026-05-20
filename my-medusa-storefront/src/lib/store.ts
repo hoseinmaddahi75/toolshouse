@@ -1,6 +1,10 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { medusaClient } from "./medusa-client";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
+
+// ✅ کلید عمومی مدوسا را مستقیم اینجا هاردکد می‌کنیم تا در بیلد داکر گم نشود
+const MEDUSA_PUBLISHABLE_KEY = "pk_82b953b964ad71f051bb02d1382200901c260d0e8628f845fd00856125b14336";
 
 interface CartState {
   cartId: string | null;
@@ -100,18 +104,16 @@ export const useCartStore = create<CartState>()(
 
       removeItem: async (lineId: string) => {
         const cartId = get().cartId;
-        const BASE_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
-        const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY; 
+        const BASE_URL = MEDUSA_BACKEND_URL;
 
         if (!cartId) return;
 
         try {
-          // استفاده از fetch مستقیم (طبق کد قبلی شما)
           const res = await fetch(`${BASE_URL}/store/carts/${cartId}/line-items/${lineId}`, {
             method: "DELETE",
             headers: {
               "Content-Type": "application/json",
-              "x-publishable-api-key": PUB_KEY || "",
+              "x-publishable-api-key": MEDUSA_PUBLISHABLE_KEY, // 👈 کلید صحیح اینجا ارسال می‌شود
             },
           });
 
@@ -129,7 +131,7 @@ export const useCartStore = create<CartState>()(
               cartId: updatedCart.id 
             });
           } else {
-            // حذف خوش‌بینانه (Optimistic update) اگر پاسخ سرور عجیب بود
+            // حذف خوش‌بینانه (Optimistic update)
             set((state) => ({
                 items: state.items.filter((item: any) => item.id !== lineId)
             }));

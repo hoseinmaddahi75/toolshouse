@@ -1,8 +1,9 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
-const BASE_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+const BASE_URL = MEDUSA_BACKEND_URL;
 
 export async function loginAdminAction(prevState: any, formData: FormData) {
   const email = formData.get("email") as string;

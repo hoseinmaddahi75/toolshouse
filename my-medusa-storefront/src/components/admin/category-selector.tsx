@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ChevronDown, ChevronLeft, Folder, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 type Category = {
   id: string;
@@ -92,7 +93,7 @@ const CategoryItem = ({
 export default function CategorySelector({ selectedIds, onChange, token }: CategorySelectorProps) {
   const [rootCategories, setRootCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const BASE_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+  const BASE_URL = MEDUSA_BACKEND_URL;
 
   useEffect(() => {
     const fetchCategories = async () => {

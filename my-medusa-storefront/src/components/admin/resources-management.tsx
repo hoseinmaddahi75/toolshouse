@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Trash2, Edit, Ruler, TableProperties, X, ImagePlus, Loader2 } from "lucide-react";
 import Image from "next/image";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 // 👇 دریافت توکن
 export default function ResourcesManagement({ token }: { token: string }) {
@@ -15,7 +16,7 @@ export default function ResourcesManagement({ token }: { token: string }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const BASE_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+  const BASE_URL = MEDUSA_BACKEND_URL;
 
   // هدر احراز هویت
   const authHeaders = {

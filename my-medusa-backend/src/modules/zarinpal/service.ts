@@ -6,18 +6,19 @@ class ZarinpalPaymentProvider extends AbstractPaymentProvider {
   
   protected options_: any
   protected logger_: any
+  
+  // 💎 مرچنت کد واقعی شما اینجا ذخیره میشه تا همیشه در دسترس باشه
+  protected merchantId_ = process.env.ZARINPAL_MERCHANT_ID || "4d661eb3-9c4f-4a6c-8ab5-caaa4d6112e8";
 
   constructor(container: any, options: any) {
     super(container)
     this.options_ = options
     this.logger_ = container.logger
-    // 🔴 لاگ قرمز برای اطمینان از لود شدن کلاس
-    console.error("🔴🔴🔴 [Zarinpal] CONSTRUCTOR CALLED 🔴🔴🔴")
+    console.error("🟢🟢🟢 [Zarinpal] PRODUCTION CONSTRUCTOR CALLED 🟢🟢🟢")
   }
 
   async initiatePayment(input: any): Promise<any> {
-    console.error("🔴🔴🔴 [Zarinpal] initiatePayment STARTED 🔴🔴🔴");
-    console.error("📦 Input received:", JSON.stringify(input, null, 2));
+    console.error("🟢🟢🟢 [Zarinpal] initiatePayment STARTED (PRODUCTION) 🟢🟢🟢");
 
     const { amount, currency_code } = input
     
@@ -27,23 +28,24 @@ class ZarinpalPaymentProvider extends AbstractPaymentProvider {
     console.error(`💰 Amount: ${amount} ${currency_code} -> ${amountInToman} Toman`);
 
     try {
-        console.error("🚀 Sending request to Sandbox...");
-        const response = await axios.post("https://sandbox.zarinpal.com/pg/v4/payment/request.json", {
-            merchant_id: this.options_.merchant_id,
+        console.error("🚀 Sending request to REAL Zarinpal API...");
+        // تغییر آدرس از sandbox به api (سرور واقعی زرین‌پال)
+        const response = await axios.post("https://api.zarinpal.com/pg/v4/payment/request.json", {
+            merchant_id: this.merchantId_,
             amount: amountInToman,
             currency: "IRT",
-            description: "Order Payment",
-            callback_url: "http://localhost:9000/zarinpal/verify", 
+            description: "پرداخت سفارش - تولزهوس",
+            callback_url: "https://api.toolshouse.ir/zarinpal/verify", 
         });
 
         const { data } = response.data;
-        console.error("📩 Zarinpal Response:", JSON.stringify(data));
-
+        
         if (data && data.code === 100) {
             const sessionData = {
                 data: {
                     authority: data.authority,
-                    payment_url: `https://sandbox.zarinpal.com/pg/StartPay/${data.authority}`,
+                    // تغییر آدرس هدایت کاربر به درگاه اصلی زرین‌پال
+                    payment_url: `https://www.zarinpal.com/pg/StartPay/${data.authority}`,
                     amount: amountInToman
                 }
             };
@@ -60,7 +62,7 @@ class ZarinpalPaymentProvider extends AbstractPaymentProvider {
   }
 
   async authorizePayment(paymentSessionData: any): Promise<any> {
-    console.error("🔄 [Zarinpal] authorizePayment called");
+    console.error("🔄 [Zarinpal] authorizePayment called (PRODUCTION)");
     const sessionData = paymentSessionData.data || paymentSessionData;
 
     if (!sessionData || !sessionData.authority) {
@@ -68,8 +70,9 @@ class ZarinpalPaymentProvider extends AbstractPaymentProvider {
     }
 
     try {
-        const response = await axios.post("https://sandbox.zarinpal.com/pg/v4/payment/verify.json", {
-            merchant_id: this.options_.merchant_id,
+        // تغییر آدرس از sandbox به api برای وریفای کردن پول
+        const response = await axios.post("https://api.zarinpal.com/pg/v4/payment/verify.json", {
+            merchant_id: this.merchantId_,
             amount: sessionData.amount,
             authority: sessionData.authority
         });
@@ -86,6 +89,7 @@ class ZarinpalPaymentProvider extends AbstractPaymentProvider {
         }
 
     } catch (error: any) {
+        console.error("❌ Zarinpal Verify Error:", error.message);
         return { status: "pending", data: sessionData };
     }
   }

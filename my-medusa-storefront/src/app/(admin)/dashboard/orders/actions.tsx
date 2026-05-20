@@ -1,6 +1,7 @@
 // src/app/(admin)/dashboard/orders/actions.ts
 "use server";
 
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 
@@ -37,7 +38,7 @@ export async function registerShipmentAction(
     // ۳. واکشی سفارش برای پیدا کردن آیتم‌های این fulfillment خاص
     // (این مرحله برای ساختار V2 ضروری است تا آیتم‌ها را پیدا کنیم)
     const orderRes = await fetch(
-      `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/admin/orders/${orderId}?fields=+fulfillments.items`,
+  `${MEDUSA_BACKEND_URL}/admin/orders/${orderId}?fields=+fulfillments.items`,
       {
         headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
@@ -63,7 +64,7 @@ export async function registerShipmentAction(
     };
 
     const shipRes = await fetch(
-      `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/admin/fulfillments/${fulfillmentId}/shipment`,
+  `${MEDUSA_BACKEND_URL}/admin/fulfillments/${fulfillmentId}/shipment`,
       {
         method: "POST",
         headers: {

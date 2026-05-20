@@ -8,6 +8,10 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import ClientLayout from "@/components/layout/ClientLayout";
 
+
+export const dynamic = "force-dynamic";
+
+
 const vazir = Vazirmatn({
   subsets: ["arabic"],
   variable: "--font-vazir",

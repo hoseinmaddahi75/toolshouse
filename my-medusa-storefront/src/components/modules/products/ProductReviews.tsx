@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import { Star, User, Loader2, Send } from "lucide-react";
 import { Button } from "@/components/ui/button"; 
 import { toast } from "sonner";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
-const BASE_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+const BASE_URL = MEDUSA_BACKEND_URL;
 // 👇 دریافت کلید از متغیرهای محیطی
 const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
 

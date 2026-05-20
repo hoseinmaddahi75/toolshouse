@@ -1,0 +1,13 @@
+.git
+.gitignore
+.next
+out
+build
+dist
+.vscode
+.idea
+.env.local
+# node_modules
+*.tar
+*.zip
+*.log

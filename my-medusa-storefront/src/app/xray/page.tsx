@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 // این یک Server Component است و مستقیماً روی سرور اجرا می‌شود
 // بنابراین هیچ مشکل CORS یا دسترسی نخواهیم داشت.
@@ -7,7 +8,7 @@ export default async function XrayPage({ searchParams }: { searchParams: Promise
   
   if (!id) return <div className="p-10">Please add ?id=order_... to the URL</div>;
 
-  const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+  const backendUrl = MEDUSA_BACKEND_URL;
   const cookieStore = await cookies();
   const headers = { 
     Cookie: cookieStore.toString(),

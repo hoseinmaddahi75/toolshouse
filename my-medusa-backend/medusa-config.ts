@@ -1,21 +1,38 @@
 import { loadEnv, defineConfig } from '@medusajs/framework/utils'
-import path from "path" // 👈 حتما این ایمپورت شود
+import path from "path"
 
 loadEnv(process.env.NODE_ENV || 'development', process.cwd())
 
 module.exports = defineConfig({
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
-    redisUrl: process.env.REDIS_URL, // 👈 این خط حتماً باشد
+    redisUrl: process.env.REDIS_URL,
     http: {
-      storeCors: process.env.STORE_CORS!,
-      adminCors: process.env.ADMIN_CORS!,
-      authCors: process.env.AUTH_CORS!,
+      // @ts-ignore
+      trustProxy: true,
+      // @ts-ignore
+      cookieOptions: {
+        sameSite: "none",
+        secure: true,
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000,
+      },
+      storeCors: process.env.STORE_CORS || "https://toolshouse.ir,https://www.toolshouse.ir",
+      adminCors: process.env.ADMIN_CORS || "https://api.toolshouse.ir,https://toolshouse.ir,https://www.toolshouse.ir",
+      authCors: process.env.AUTH_CORS || "https://api.toolshouse.ir,https://toolshouse.ir,https://www.toolshouse.ir",
       jwtSecret: process.env.JWT_SECRET || "supersecret",
       cookieSecret: process.env.COOKIE_SECRET || "supersecret",
     }
   },
   modules: [
+    {
+      resolve: "@medusajs/medusa/cache-redis",
+      options: { redisUrl: process.env.REDIS_URL },
+    },
+    {
+      resolve: "@medusajs/medusa/event-bus-redis",
+      options: { redisUrl: process.env.REDIS_URL },
+    },
     {
       resolve: "@medusajs/medusa/payment",
       options: {
@@ -25,7 +42,22 @@ module.exports = defineConfig({
             id: "zarinpal",
             options: {
               merchant_id: process.env.ZARINPAL_MERCHANT_ID,
-              callbackUrl: "http://localhost:9000/zarinpal/verify",
+              callbackUrl: "https://api.toolshouse.ir/zarinpal/verify",
+            },
+          },
+        ],
+      },
+    },
+    {
+      resolve: "@medusajs/medusa/file", // کلمه medusa برگشت
+      options: {
+        providers: [
+          {
+            resolve: "@medusajs/medusa/file-local", // کلمه medusa برگشت
+            id: "local",
+            options: {
+              upload_dir: "static",
+              backend_url: "https://api.toolshouse.ir/static", // کلمه static اضافه شد
             },
           },
         ],

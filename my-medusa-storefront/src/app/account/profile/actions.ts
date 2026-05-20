@@ -2,9 +2,10 @@
 
 import { getAuthHeaders } from "@/lib/data-service";
 import { revalidatePath } from "next/cache";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 export async function updateProfileAction(prevState: any, formData: FormData) {
-  const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+  const BACKEND_URL = MEDUSA_BACKEND_URL;
   const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
 
   const authHeaders = await getAuthHeaders();
@@ -51,7 +52,7 @@ export async function updateProfileAction(prevState: any, formData: FormData) {
 // ... کدهای قبلی (updateProfileAction) سر جایشان باشند ...
 
 export async function updatePasswordAction(prevState: any, formData: FormData) {
-  const BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+  const BACKEND_URL = MEDUSA_BACKEND_URL;
   const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
 
   const newPassword = formData.get("new_password") as string;

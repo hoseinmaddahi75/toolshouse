@@ -2,6 +2,10 @@
 import "@/app/globals.css";
 import { Vazirmatn } from "next/font/google";
 
+
+export const dynamic = "force-dynamic";
+
+
 const vazir = Vazirmatn({
   subsets: ["arabic"],
   variable: "--font-vazir",

@@ -4,6 +4,7 @@ import StoreBreadcrumb from "@/components/store/store-breadcrumb";
 import Pagination from "@/components/store/pagination";
 import FilterSidebar from "@/components/store/filter-sidebar";
 import MobileFilter from "@/components/store/mobile-filter";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
@@ -46,7 +47,7 @@ async function getRegion() {
 }
 
 async function getCategories() {
-  const baseUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+  const baseUrl = MEDUSA_BACKEND_URL;
   const apiKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY;
   try {
     const res = await fetch(`${baseUrl}/store/product-categories?parent_category_id=null&include_descendants_tree=true&limit=100`, {

@@ -5,10 +5,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { cookies } from "next/headers";
 import ClearCartEffect from "./clear-cart-effect"; // 👈 کامپوننت جدید که پایین‌تر می‌سازیم
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 export default async function OrderConfirmedPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const BASE_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+  const BASE_URL = MEDUSA_BACKEND_URL;
   const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
   
   const cookieStore = await cookies();

@@ -6,6 +6,7 @@ import { CalendarIcon, UserIcon, ArrowLeftIcon } from "@heroicons/react/24/outli
 // ✅ ایمپورت که وجود داشت:
 import { getCategoryLabel } from "@/lib/constants";
 
+export const dynamic = "force-dynamic";
 export const metadata = {
   title: "مجله مد و استایل رگال | وبلاگ",
   description: "جدیدترین مقالات آموزشی در حوزه مد، فشن و استایل آقایان و بانوان",

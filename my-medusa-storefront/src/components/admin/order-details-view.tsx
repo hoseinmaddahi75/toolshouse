@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { formatPrice } from "@/lib/medusa-client";
 import { registerShipmentAction } from "@/app/(admin)/dashboard/orders/actions";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 // تایپ‌ها
 type Fulfillment = any;
@@ -28,7 +29,7 @@ export default function OrderDetailsView({ id, token }: { id: string, token: str
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   
-  const BASE_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+  const BASE_URL = MEDUSA_BACKEND_URL;
 
   const authHeaders = {
     "Authorization": `Bearer ${token}`,
@@ -164,7 +165,9 @@ export default function OrderDetailsView({ id, token }: { id: string, token: str
         <div className="flex items-center gap-2">
            <Link href="/dashboard/orders"><Button variant="ghost" size="icon"><ChevronRight className="w-5 h-5 text-gray-500" /></Button></Link>
            <div>
-             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">سفارش #{order.display_id} <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">{order.status}</span></h1>
+             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">سفارش #{order.display_id} <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">
+  {order.payment_status === "captured" ? "پرداخت موفق" : order.payment_status}
+</span></h1>
              <p className="text-sm text-gray-500 mt-1">{order.email}</p>
            </div>
         </div>

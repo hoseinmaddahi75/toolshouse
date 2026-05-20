@@ -10,6 +10,7 @@ import {
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
+import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 // --- توابع کمکی (برای محاسبه قیمت و وضعیت) ---
 
@@ -38,7 +39,7 @@ const getStatusBadge = (order: any) => {
 };
 
 export default async function AccountOverview() {
-  const BASE_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+  const BASE_URL = MEDUSA_BACKEND_URL;
   const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
   
   // دریافت کوکی‌ها برای احراز هویت
