@@ -1,0 +1,77 @@
+{
+  "name": "medusa-plugin-blog",
+  "version": "1.0.0",
+  "description": "Blog plugin for Medusa v2 — posts, categories, comments, and admin UI",
+  "author": "Hosein Maddahi",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hoseinmaddahi75/medusa-plugin-blog.git"
+  },
+  "keywords": [
+    "medusa",
+    "medusa-v2",
+    "medusa-plugin",
+    "medusa-plugin-other",
+    "blog",
+    "cms"
+  ],
+  "files": [
+    ".medusa/server",
+    "database"
+  ],
+  "exports": {
+    "./package.json": "./package.json",
+    "./*": "./.medusa/server/src/*.js",
+    "./admin": {
+      "import": "./.medusa/server/src/admin/index.mjs",
+      "require": "./.medusa/server/src/admin/index.js",
+      "default": "./.medusa/server/src/admin/index.js"
+    }
+  },
+  "scripts": {
+    "build": "medusa plugin:build",
+    "dev": "medusa plugin:develop",
+    "prepublishOnly": "yarn build"
+  },
+  "dependencies": {
+    "multer": "^1.4.5-lts.1",
+    "react-quill": "^2.0.0"
+  },
+  "devDependencies": {
+    "@heroicons/react": "^2.1.3",
+    "@medusajs/admin-sdk": "preview",
+    "@medusajs/cli": "preview",
+    "@medusajs/framework": "preview",
+    "@medusajs/icons": "preview",
+    "@medusajs/types": "preview",
+    "@medusajs/ui": "preview",
+    "@types/multer": "^2.0.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "6.30.3",
+    "typescript": "^5.7.2"
+  },
+  "peerDependencies": {
+    "@heroicons/react": "^2.0.0",
+    "@medusajs/admin-sdk": "preview",
+    "@medusajs/cli": "preview",
+    "@medusajs/framework": "preview",
+    "@medusajs/icons": "preview",
+    "@medusajs/ui": "preview",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@medusajs/admin-sdk": { "optional": true },
+    "@medusajs/cli": { "optional": true },
+    "@medusajs/icons": { "optional": true },
+    "@medusajs/ui": { "optional": true }
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
