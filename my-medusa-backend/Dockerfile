@@ -8,7 +8,7 @@ WORKDIR /app
 COPY my-medusa-backend/package.json my-medusa-backend/yarn.lock ./
 
 # Install dependencies
-RUN npm install -g yarn && yarn install --frozen-lockfile
+RUN yarn install --frozen-lockfile
 
 # Copy all source files
 COPY my-medusa-backend/ .
@@ -30,8 +30,8 @@ COPY --from=builder /app/medusa-config.ts ./medusa-config.ts
 COPY --from=builder /app/static ./static
 
 # Environment variables
-ENV NODE_ENV production
-ENV PORT 9000
+ENV NODE_ENV=production
+ENV PORT=9000
 
 EXPOSE 9000
 
