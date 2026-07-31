@@ -66,7 +66,7 @@ jobs:
 
       - name: Deploy to server
         run: |
-          ssh -o StrictHostKeyChecking=no ${SECRET_USER}@${SECRET_HOST} "
+          ssh -p ${SECRET_PORT} -o StrictHostKeyChecking=no ${SECRET_USER}@${SECRET_HOST} "
             cd ~/toolshouse &&
             docker compose pull &&
             docker compose up -d --remove-orphans &&
@@ -75,3 +75,4 @@ jobs:
         env:
           SECRET_HOST: ${{ secrets.SERVER_HOST }}
           SECRET_USER: ${{ secrets.SERVER_USER }}
+          SECRET_PORT: ${{ secrets.SERVER_PORT }}
