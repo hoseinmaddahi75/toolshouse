@@ -1,10 +1,10 @@
-import { cookies } from "next/headers"; // ✅ اضافه شد
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { UserCog, ShieldAlert } from "lucide-react";
 import ProfileForm from "./profile-form";
 import LogoutButton from "@/components/store/logout-button";
 import { MEDUSA_BACKEND_URL } from "@/lib/constants";
+import { getCustomerIdFromCookie } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -13,8 +13,7 @@ export default async function ProfilePage() {
   const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
 
   // 1. خواندن شناسه مشتری از کوکی
-  const cookieStore = await cookies();
-  const customerId = cookieStore.get("_medusa_jwt")?.value;
+  const customerId = await getCustomerIdFromCookie();
 
   let customer = null;
   let errorMsg = "";
@@ -76,7 +75,7 @@ export default async function ProfilePage() {
             </div>
         </CardHeader>
         <CardContent className="p-6">
-            <ProfileForm customer={customer} />
+            <ProfileForm customer={customer} customerId={customerId!} />
         </CardContent>
       </Card>
 

@@ -95,9 +95,10 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
 
   const data = await getAdminProducts(page, limit, query, order);
 
-  if (data.error === "unauthorized") redirect("/login");
+  if (data.error === "unauthorized") redirect("/admin/login");
 
-  const { products, count } = data;
+  const products = data.products || [];
+  const count = data.count || 0;
   const totalPages = Math.ceil(count / limit);
 
   return (

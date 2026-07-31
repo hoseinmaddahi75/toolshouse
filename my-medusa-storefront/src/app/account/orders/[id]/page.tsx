@@ -10,8 +10,8 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { cookies } from "next/headers"; // برای دریافت توکن
 import { MEDUSA_BACKEND_URL } from "@/lib/constants";
+import { getCustomerIdFromCookie } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -43,8 +43,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
   
   // دریافت شناسه مشتری برای احراز هویت در API اختصاصی
-  const cookieStore = await cookies();
-  const customerId = cookieStore.get("_medusa_jwt")?.value;
+  const customerId = await getCustomerIdFromCookie();
 
   let order = null;
 

@@ -1,4 +1,3 @@
-import { cookies } from "next/headers";
 import { formatPrice } from "@/lib/medusa-client";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,7 @@ import { ShoppingBag, Truck, Clock, ChevronLeft } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { MEDUSA_BACKEND_URL } from "@/lib/constants";
+import { getCustomerIdFromCookie } from "@/lib/auth";
 
 // 🔴 تغییر مهم: جلوگیری کامل از کش شدن صفحه
 export const dynamic = "force-dynamic";
@@ -90,8 +90,7 @@ const getTrackingInfo = (order: any) => {
 export default async function OrdersPage() {
   const BASE_URL = MEDUSA_BACKEND_URL;
   const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
-  const cookieStore = await cookies();
-  const customerId = cookieStore.get("_medusa_jwt")?.value;
+  const customerId = await getCustomerIdFromCookie();
 
   let orders = [];
 

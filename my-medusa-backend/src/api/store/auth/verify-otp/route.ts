@@ -1,5 +1,8 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http";
 import Redis from "ioredis";
+import jwt from "jsonwebtoken";
+
+const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379");
@@ -60,8 +63,22 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       customer = Array.isArray(created) ? created[0] : created;
     }
 
+    const token = jwt.sign(
+      {
+        actor_id: customer.id,
+        actor_type: "customer",
+        auth_identity_id: "",
+        auth_provider: "otp",
+        app_metadata: { customer_id: customer.id },
+        user_metadata: {},
+      },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
     return res.status(200).json({
       message: "ورود با موفقیت انجام شد",
+      access_token: token,
       customer: {
         id: customer.id,
         phone: customer.phone,

@@ -1,4 +1,3 @@
-import { cookies } from "next/headers";
 import { formatPrice } from "@/lib/medusa-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -11,6 +10,7 @@ import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 import { MEDUSA_BACKEND_URL } from "@/lib/constants";
+import { getCustomerIdFromCookie } from "@/lib/auth";
 
 // --- توابع کمکی (برای محاسبه قیمت و وضعیت) ---
 
@@ -43,8 +43,7 @@ export default async function AccountOverview() {
   const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
   
   // دریافت کوکی‌ها برای احراز هویت
-  const cookieStore = await cookies();
-  const customerId = cookieStore.get("_medusa_jwt")?.value;
+  const customerId = await getCustomerIdFromCookie();
 
   let allOrders: any[] = [];
   let totalSpent = 0;

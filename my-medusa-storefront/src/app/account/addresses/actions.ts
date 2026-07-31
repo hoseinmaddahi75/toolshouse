@@ -1,16 +1,15 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { MEDUSA_BACKEND_URL } from "@/lib/constants";
+import { getCustomerIdFromCookie } from "@/lib/auth";
 
 const BASE_URL = MEDUSA_BACKEND_URL;
 const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
 
 async function getHeaders() {
-  const cookieStore = await cookies();
-  const customerId = cookieStore.get("_medusa_jwt")?.value;
+  const customerId = await getCustomerIdFromCookie();
   return {
     "Content-Type": "application/json",
     "x-publishable-api-key": PUBLISHABLE_KEY,

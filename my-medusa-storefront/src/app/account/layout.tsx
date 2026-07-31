@@ -1,11 +1,9 @@
-import { cookies } from "next/headers";
 import AccountLayoutWrapper from "@/components/account/account-layout-wrapper";
 import { MEDUSA_BACKEND_URL } from "@/lib/constants";
+import { getCustomerIdFromCookie } from "@/lib/auth";
 
 export default async function AccountLayout({ children }: { children: React.ReactNode }) {
-  const cookieStore = await cookies();
-  // اینجا ما ID مشتری را که در مرحله قبل ذخیره کردیم می‌خوانیم
-  const customerId = cookieStore.get("_medusa_jwt")?.value;
+  const customerId = await getCustomerIdFromCookie();
   
   const BASE_URL = MEDUSA_BACKEND_URL;
   const PUB_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY;

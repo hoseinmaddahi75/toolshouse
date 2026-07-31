@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Vazirmatn } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from "sonner";
@@ -12,8 +12,11 @@ import ClientLayout from "@/components/layout/ClientLayout";
 export const dynamic = "force-dynamic";
 
 
-const vazir = Vazirmatn({
-  subsets: ["arabic"],
+const vazir = localFont({
+  src: [
+    { path: "../../public/fonts/Vazirmatn-Regular.woff2", weight: "400", style: "normal" },
+    { path: "../../public/fonts/Vazirmatn-Bold.woff2", weight: "700", style: "normal" },
+  ],
   variable: "--font-vazir",
   display: "swap",
 });

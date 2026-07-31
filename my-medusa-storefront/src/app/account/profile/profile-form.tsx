@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Cookies from "js-cookie"; // مطمئن شو نصب است
 import { Loader2 } from "lucide-react";
 import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
@@ -14,17 +13,17 @@ type CustomerProps = {
     email: string;
     phone: string;
   };
+  customerId: string;
 };
 
-export default function ProfileForm({ customer }: CustomerProps) {
+export default function ProfileForm({ customer, customerId }: CustomerProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
-  // استیت‌های فرم
   const [firstName, setFirstName] = useState(customer.first_name || "");
   const [lastName, setLastName] = useState(customer.last_name || "");
-  const [email, setEmail] = useState(customer.email || ""); // ایمیل را از اینجا می‌خوانیم
+  const [email, setEmail] = useState(customer.email || "");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,27 +32,19 @@ export default function ProfileForm({ customer }: CustomerProps) {
 
     const BASE_URL = MEDUSA_BACKEND_URL;
     const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
-    const customerId = Cookies.get("_medusa_jwt"); // دریافت شناسه از کوکی
-
-    if (!customerId) {
-        setMsg({ type: 'error', text: "نشست کاربری نامعتبر است. لطفاً دوباره وارد شوید." });
-        setLoading(false);
-        return;
-    }
 
     try {
-      // ارسال درخواست به مسیر اختصاصی خودمان
       const res = await fetch(`${BASE_URL}/store/custom-auth/me`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-publishable-api-key": PUBLISHABLE_KEY,
-          "x-customer-id": customerId, // 👈 کلید احراز هویت ما
+          "x-customer-id": customerId,
         },
         body: JSON.stringify({
           first_name: firstName,
           last_name: lastName,
-          email: email, // ایمیل جدید
+          email: email,
         }),
       });
 
@@ -64,7 +55,7 @@ export default function ProfileForm({ customer }: CustomerProps) {
       }
 
       setMsg({ type: 'success', text: "اطلاعات با موفقیت بروزرسانی شد" });
-      router.refresh(); // رفرش برای نمایش نام جدید در هدر/سایدبار
+      router.refresh();
 
     } catch (err: any) {
       setMsg({ type: 'error', text: err.message });

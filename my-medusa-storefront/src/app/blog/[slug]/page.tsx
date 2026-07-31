@@ -2,17 +2,16 @@ import Image from "next/image";
 import Link from "next/link";
 import { getPostBySlug, getBlogPosts, getCategories, getComments } from "@/lib/data/blog";
 import BlogSidebar from "@/components/blog/BlogSidebar";
-import { CalendarIcon, UserIcon, FolderIcon, ShareIcon } from "@heroicons/react/24/outline";
+import { CalendarIcon, UserIcon, FolderIcon } from "@heroicons/react/24/outline";
 import { getCategoryLabel } from "@/lib/constants";
-// 👇 ایمپورت کامپوننت نظرات (مطمئن شوید فایلش را در components/blog ساخته‌اید)
 import CommentSection from "@/components/blog/CommentSection";
+import ShareButton from "@/components/blog/ShareButton";
 
 
 type Props = {
   params: Promise<{ slug: string }>;
 };
 
-// تابع تمیزکاری محتوای HTML
 function cleanContent(content: string) {
   if (!content) return "";
   let cleaned = content
@@ -28,7 +27,6 @@ function cleanContent(content: string) {
   return cleaned;
 }
 
-// تولید متادیتای سئو
 export async function generateMetadata(props: Props) {
   const params = await props.params;
   const post = await getPostBySlug(params.slug);
@@ -42,7 +40,6 @@ export async function generateMetadata(props: Props) {
 export default async function BlogPostPage(props: Props) {
   const params = await props.params;
 
-  // 1. ابتدا خود مقاله را می‌گیریم (چون برای گرفتن نظرات به ID مقاله نیاز داریم)
   const post = await getPostBySlug(params.slug);
 
   if (!post) {
@@ -55,14 +52,12 @@ export default async function BlogPostPage(props: Props) {
     );
   }
 
-  // 2. حالا به صورت موازی بقیه اطلاعات را می‌گیریم (نظرات، سایدبار، دسته‌بندی‌ها)
   const [allPosts, categories, comments] = await Promise.all([
     getBlogPosts(),
     getCategories(),
-    getComments(post.id) // 👇 دریافت نظرات با استفاده از ID پست
+    getComments(post.id)
   ]);
 
-  // تبدیل نام دسته‌بندی به فارسی
   const categoryTitle = getCategoryLabel(post.category);
   const cleanHTML = cleanContent(post.content);
 
@@ -120,8 +115,8 @@ export default async function BlogPostPage(props: Props) {
                 )}
               </div>
 
-              <div 
-                className="blog-content prose prose-lg max-w-none prose-img:rounded-xl prose-headings:text-black prose-p:text-gray-600 prose-a:text-blue-600"
+              <div
+                className="blog-content prose prose-lg max-w-none prose-img:rounded-xl prose-img:max-w-full prose-headings:text-black prose-p:text-gray-600 prose-a:text-blue-600 prose-pre:overflow-x-auto prose-table:block prose-table:overflow-x-auto break-words"
                 dangerouslySetInnerHTML={{ __html: cleanHTML }}
               />
 
@@ -133,16 +128,11 @@ export default async function BlogPostPage(props: Props) {
                         <span className="text-xs bg-gray-50 border border-gray-200 px-3 py-1 rounded-full text-gray-600">استایل</span>
                     </div>
                 </div>
-                <button className="flex items-center gap-2 text-sm font-medium text-white bg-black px-4 py-2 rounded-lg hover:bg-[#B19276] transition-colors">
-                    <ShareIcon className="w-4 h-4" />
-                    اشتراک گذاری
-                </button>
+                <ShareButton />
               </div>
 
             </article>
 
-            {/* 👇 بخش نظرات داینامیک */}
-            {/* ما ID پست و لیست نظرات اولیه را به کامپوننت پاس می‌دهیم */}
             <CommentSection postId={post.id} initialComments={comments} />
 
           </main>

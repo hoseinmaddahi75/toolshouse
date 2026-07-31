@@ -1,22 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
-import { useCartStore } from "@/lib/store"; // مسیر استور خود را چک کنید
+import { useCartStore } from "@/lib/store";
 
 export default function ClearCartEffect() {
   useEffect(() => {
-    console.log("🧹 Cleaning up cart data after success...");
-    
-    // ۱. پاک کردن از حافظه مرورگر
-    localStorage.removeItem("medusa_cart_id");
-    
-    // ۲. ریست کردن استیت زوستاند
-    useCartStore.setState({ 
-        cartId: null, 
-        items: [] 
-    });
-    
+    useCartStore.setState({ cartId: null, items: [] });
+    useCartStore.persist.clearStorage();
   }, []);
 
-  return null; // این کامپوننت چیزی نمایش نمی‌دهد
+  return null;
 }

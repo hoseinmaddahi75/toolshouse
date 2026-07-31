@@ -1,57 +1,90 @@
 version: '3.8'
+
 services:
-  db:
-    image: postgres:15
-    container_name: tooshouse-db
-    restart: always
+  postgres:
+    image: postgres:15-alpine
+    container_name: toolshouse-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - toolshouse-network
 
   redis:
     image: redis:alpine
-    container_name: tooshouse-redis
-    restart: always
+    container_name: toolshouse-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - toolshouse-network
 
   backend:
-    build: ./my-medusa-backend
-    container_name: tooshouse-backend
-    restart: always
+    image: ghcr.io/hoseinmaddahi75/toolshouse/backend:latest
+    container_name: toolshouse-backend
+    restart: unless-stopped
     depends_on:
-      - db
+      - postgres
       - redis
-    env_file:
-      - ./my-medusa-backend/.env
     environment:
-      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@tooshouse-db:5432/${POSTGRES_DB}
-      - REDIS_URL=redis://tooshouse-redis:6379
+      - NODE_ENV=production
+      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://redis:6379
       - STORE_CORS=${FRONTEND_URL}
       - ADMIN_CORS=${ADMIN_URL}
       - AUTH_CORS=${FRONTEND_URL},${ADMIN_URL}
       - MEDUSA_BACKEND_URL=${BACKEND_URL}
       - BACKEND_URL=${BACKEND_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - COOKIE_SECRET=${COOKIE_SECRET}
+    networks:
+      - toolshouse-network
     ports:
       - "9000:9000"
 
-  storefront:
-    build:
-      context: ./my-medusa-storefront
-      args:
-        - NEXT_PUBLIC_MEDUSA_BACKEND_URL=${BACKEND_URL}
-    container_name: tooshouse-storefront
-    restart: always
+  frontend:
+    image: ghcr.io/hoseinmaddahi75/toolshouse/frontend:latest
+    container_name: toolshouse-frontend
+    restart: unless-stopped
     depends_on:
       - backend
-    env_file:
-      - ./my-medusa-storefront/.env
     environment:
+      - NODE_ENV=production
       - NEXT_PUBLIC_MEDUSA_BACKEND_URL=${BACKEND_URL}
       - NEXT_PUBLIC_BASE_URL=${FRONTEND_URL}
+    networks:
+      - toolshouse-network
     ports:
       - "3000:3000"
 
+  caddy:
+    image: caddy:alpine
+    container_name: toolshouse-caddy
+    restart: unless-stopped
+    depends_on:
+      - frontend
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - toolshouse-network
+
 volumes:
   postgres_data:
+  redis_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  toolshouse-network:
+    driver: bridge

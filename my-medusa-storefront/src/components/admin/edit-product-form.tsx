@@ -29,17 +29,14 @@ type GlobalAttribute = { id: string; title: string; values: { id: string; value:
 type SpecTemplate = { id: string; title: string; fields: string[] };
 type SizeGuide = { id: string; title: string; image_url: string };
 
-// 👇 دریافت توکن به عنوان پراپ
 export default function EditProductForm({ id, token }: { id: string, token: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const BASE_URL = MEDUSA_BACKEND_URL;
 
-  // هدر احراز هویت برای تمام درخواست‌ها
   const authHeaders = {
     "Authorization": `Bearer ${token}`
-    // Content-Type بسته به نوع درخواست اضافه می‌شود
   };
 
   const [title, setTitle] = useState("");
@@ -67,34 +64,43 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
     const fetchAllData = async () => {
       try {
         setLoading(true);
-        // 👇 اضافه کردن هدر Authorization به تمام درخواست‌ها
+        const safeFetch = async (url: string) => {
+          try {
+            const res = await fetch(url, { headers: authHeaders });
+            return res.ok ? res : null;
+          } catch { return null; }
+        };
+
         const [specsRes, sizesRes, locRes, attrsRes, scRes, spRes, productRes] = await Promise.all([
-            fetch(`${BASE_URL}/admin/product-resources?type=specs`, { headers: authHeaders }),
-            fetch(`${BASE_URL}/admin/product-resources?type=sizes`, { headers: authHeaders }),
-            fetch(`${BASE_URL}/admin/stock-locations`, { headers: authHeaders }),
-            fetch(`${BASE_URL}/admin/global-attributes`, { headers: authHeaders }),
-            fetch(`${BASE_URL}/admin/sales-channels`, { headers: authHeaders }),
-            fetch(`${BASE_URL}/admin/shipping-profiles`, { headers: authHeaders }),
-            fetch(`${BASE_URL}/admin/products/${id}/details`, { headers: authHeaders }) // استفاده از ID پراپ
+            safeFetch(`${BASE_URL}/admin/product-resources?type=specs`),
+            safeFetch(`${BASE_URL}/admin/product-resources?type=sizes`),
+            safeFetch(`${BASE_URL}/admin/stock-locations`),
+            safeFetch(`${BASE_URL}/admin/global-attributes`),
+            safeFetch(`${BASE_URL}/admin/sales-channels`),
+            safeFetch(`${BASE_URL}/admin/shipping-profiles`),
+            safeFetch(`${BASE_URL}/admin/products/${id}/details`),
         ]);
 
-        if (!productRes.ok) {
-            if (productRes.status === 401) throw new Error("لطفا مجدد وارد شوید");
-            throw new Error("Product not found");
+        if (!productRes) {
+            throw new Error("محصول یافت نشد");
         }
 
-        const sData = await specsRes.json(); setSpecTemplates(sData.data || []);
-        const zData = await sizesRes.json(); setSizeGuides(zData.data || []);
-        const lData = await locRes.json(); setStockLocationId(lData.stock_locations?.[0]?.id);
-        if (attrsRes.ok) { const aData = await attrsRes.json(); setGlobalAttributes(aData.attributes || []); }
+        if (specsRes) { const sData = await specsRes.json(); setSpecTemplates(sData.data || []); }
+        if (sizesRes) { const zData = await sizesRes.json(); setSizeGuides(zData.data || []); }
+        if (locRes) { const lData = await locRes.json(); setStockLocationId(lData.stock_locations?.[0]?.id || null); }
+        if (attrsRes) { const aData = await attrsRes.json(); setGlobalAttributes(aData.attributes || []); }
 
-        const scData = await scRes.json();
-        if (scData.sales_channels?.length > 0) setDefaultSalesChannelId(scData.sales_channels[0].id);
+        if (scRes) {
+            const scData = await scRes.json();
+            if (scData.sales_channels?.length > 0) setDefaultSalesChannelId(scData.sales_channels[0].id);
+        }
 
-        const spData = await spRes.json();
-        if (spData.shipping_profiles?.length > 0) {
-            const defProfile = spData.shipping_profiles.find((p: any) => p.type === "default") || spData.shipping_profiles[0];
-            setDefaultShippingProfileId(defProfile.id);
+        if (spRes) {
+            const spData = await spRes.json();
+            if (spData.shipping_profiles?.length > 0) {
+                const defProfile = spData.shipping_profiles.find((p: any) => p.type === "default") || spData.shipping_profiles[0];
+                setDefaultShippingProfileId(defProfile.id);
+            }
         }
 
         const { product } = await productRes.json();
@@ -201,7 +207,7 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
 
       await fetch(`${BASE_URL}/admin/products/${id}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeaders }, // 👈 Auth Header
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify(updatePayload),
       });
 
@@ -215,11 +221,11 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
           for (const title of newOptionTitles) {
               const exists = currentOptions.find((o: any) => o.title === title);
               if (!exists) {
-                  let sampleValue = "Default";
-                  for(const v of newVariants) { if(v.options[title]) { sampleValue = v.options[title]; break; } }
+                  const uniqueValues = [...new Set(newVariants.map(v => v.options[title]).filter(Boolean))];
+                  if (uniqueValues.length === 0) uniqueValues.push("Default");
                   await fetch(`${BASE_URL}/admin/products/${id}/options`, {
                       method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
-                      body: JSON.stringify({ title: title, values: [sampleValue] }),
+                      body: JSON.stringify({ title: title, values: uniqueValues }),
                   });
                   optionsModified = true;
               }
@@ -267,7 +273,7 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
       await Promise.all(existingVariants.map(async (v) => {
          await fetch(`${BASE_URL}/admin/products/${id}/variants/${v.id}`, {
             method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
-            body: JSON.stringify({ prices: [{ amount: Number(v.price), currency_code: "irr" }], origin_country: "IR" }),
+            body: JSON.stringify({ sku: v.sku || null, prices: [{ amount: Number(v.price), currency_code: "irr" }], origin_country: "IR" }),
          });
          if (v.inventory_item_id && stockLocationId) {
              await updateInventoryWithRetry(v.inventory_item_id, Number(v.inventory), stockLocationId);
@@ -275,7 +281,7 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
       }));
       
       toast.success("تغییرات ذخیره شد");
-      setTimeout(() => { window.location.reload(); }, 1500);
+      router.refresh();
     } catch (error: any) {
       console.error(error); toast.error("خطایی رخ داد.");
     } finally { setSaving(false); }
@@ -305,16 +311,17 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
       const formData = new FormData(); formData.append("files", e.target.files[0]);
       const tId = toast.loading("در حال آپلود...");
       try {
-        // 👇 برای آپلود فایل نباید Content-Type ست کنیم (مرورگر خودش می‌گذارد)
-        const res = await fetch(`${BASE_URL}/admin/uploads`, { 
-            method: "POST", 
-            body: formData, 
-            headers: { "Authorization": `Bearer ${token}` } 
+        const res = await fetch(`${BASE_URL}/admin/uploads`, {
+            method: "POST",
+            body: formData,
+            headers: { "Authorization": `Bearer ${token}` }
         });
+        if (!res.ok) throw new Error("خطا در آپلود");
         const data = await res.json();
+        if (!data.files?.[0]?.url) throw new Error("پاسخ سرور نامعتبر");
         setImages(prev => [...prev, { url: data.files[0].url, isThumbnail: prev.length === 0 }]);
         toast.dismiss(tId);
-      } catch (err) { toast.dismiss(tId); }
+      } catch (err: any) { toast.dismiss(tId); toast.error(err.message || "خطا در آپلود تصویر"); }
     }
   };
   const removeImage = (url: string) => setImages(prev => prev.filter(img => img.url !== url));

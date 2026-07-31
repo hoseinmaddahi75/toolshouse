@@ -1,13 +1,12 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { MEDUSA_BACKEND_URL } from "@/lib/constants";
+import { getAuthDataFromCookie } from "@/lib/auth";
 
 export async function addAddressAction(prevState: any, formData: FormData) {
   const BACKEND_URL = MEDUSA_BACKEND_URL;
-  // مطمئن شویم که کلید حتماً وجود دارد
   const API_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY;
 
   if (!API_KEY) {
@@ -15,16 +14,11 @@ export async function addAddressAction(prevState: any, formData: FormData) {
     return { success: false, message: "خطای تنظیمات سرور: کلید API یافت نشد." };
   }
 
-  // 1. دریافت و تمیزکاری توکن (مثل فایل layout)
-  const cookieStore = await cookies();
-  let token = cookieStore.get("_medusa_jwt")?.value;
+  const { jwt } = await getAuthDataFromCookie();
 
-  if (!token) {
+  if (!jwt) {
     return { success: false, message: "لطفا مجدداً وارد شوید." };
   }
-
-  // حذف کوتیشن‌های مزاحم
-  token = token.replace(/^"|"$/g, '');
 
   // 2. آماده‌سازی دیتا
   const rawData = {
@@ -46,8 +40,8 @@ export async function addAddressAction(prevState: any, formData: FormData) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`, // توکن تمیز شده
-        "x-publishable-api-key": API_KEY,   // کلید مطمئن
+        "Authorization": `Bearer ${jwt}`,
+        "x-publishable-api-key": API_KEY,
       },
       body: JSON.stringify(rawData),
       cache: "no-store",

@@ -74,7 +74,16 @@ function CheckoutContent() {
   useEffect(() => {
     const init = async () => {
       if (!cartId) await initializeCart();
-      const currentCartId = cartId || localStorage.getItem("medusa_cart_id");
+      let currentCartId = cartId;
+      if (!currentCartId) {
+        try {
+          const raw = localStorage.getItem("medusa-cart-storage");
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            currentCartId = parsed?.state?.cartId || null;
+          }
+        } catch {}
+      }
       
       if (currentCartId) {
           await ensureCartOwnership(currentCartId);
@@ -115,8 +124,8 @@ function CheckoutContent() {
     const orderId = searchParams.get("order_id");
 
     if (paymentStatus === "success" && orderId) {
-        localStorage.removeItem("medusa_cart_id");
         useCartStore.setState({ cartId: null, items: [] });
+        useCartStore.persist.clearStorage();
         router.push(`/order/confirmed/${orderId}`);
     }
   }, [searchParams, router]);
@@ -162,6 +171,31 @@ function CheckoutContent() {
   const handleSubmitAddress = async () => {
     if (!cartId) return;
 
+    if (!shippingAddress.first_name.trim()) {
+        toast.error("نام الزامی است");
+        return;
+    }
+    if (!shippingAddress.last_name.trim()) {
+        toast.error("نام خانوادگی الزامی است");
+        return;
+    }
+    if (!shippingAddress.address_1.trim()) {
+        toast.error("آدرس دقیق الزامی است");
+        return;
+    }
+    if (!shippingAddress.city.trim()) {
+        toast.error("شهر الزامی است");
+        return;
+    }
+    if (!shippingAddress.postal_code.trim()) {
+        toast.error("کدپستی الزامی است");
+        return;
+    }
+    if (!shippingAddress.phone.trim()) {
+        toast.error("تلفن تماس الزامی است");
+        return;
+    }
+
     if (!email || email.trim() === "") {
         setEmailError("لطفاً ایمیل خود را وارد کنید");
         toast.error("وارد کردن ایمیل الزامی است");
@@ -203,10 +237,13 @@ function CheckoutContent() {
           if (!result.success) throw new Error(result.error);
 
           if (result.session) {
-              const newSession = result.session;
-              if (!newSession.provider_id) newSession.provider_id = "pp_zarinpal_zarinpal";
-              setPaymentSessions([newSession]); 
-              setSelectedPaymentProvider(newSession.provider_id);
+              const raw = result.session;
+              const session = Array.isArray(raw) ? raw[0] : raw;
+              if (session) {
+                  if (!session.provider_id) session.provider_id = "pp_zarinpal_zarinpal";
+                  setPaymentSessions([session]);
+                  setSelectedPaymentProvider(session.provider_id);
+              }
           } else {
              const cartData = await getCartDetails(cartId);
              setPaymentSessions(cartData?.cart?.payment_collection?.payment_sessions || []);
@@ -224,6 +261,13 @@ function CheckoutContent() {
       setSelectedPaymentProvider(providerId);
   };
 
+  const extractPaymentUrl = (session: any): string | null => {
+    if (!session) return null;
+    const d = session.data;
+    if (!d) return null;
+    return d.payment_url || d.data?.payment_url || null;
+  };
+
   const handleFinalPayment = async () => {
     if (searchParams.get("payment_status") === "success") return;
 
@@ -235,7 +279,7 @@ function CheckoutContent() {
     
     try {
       const currentSession = paymentSessions.find(s => s.provider_id === selectedPaymentProvider);
-      let paymentUrl = currentSession?.data?.payment_url || currentSession?.data?.data?.payment_url;
+      let paymentUrl = extractPaymentUrl(currentSession);
 
       if (paymentUrl) {
           window.location.href = paymentUrl;
@@ -246,7 +290,7 @@ function CheckoutContent() {
       const freshSessions = freshCartData?.cart?.payment_collection?.payment_sessions || [];
       const session = freshSessions.find((s: any) => s.provider_id === selectedPaymentProvider);
       
-      paymentUrl = session?.data?.payment_url || session?.data?.data?.payment_url;
+      paymentUrl = extractPaymentUrl(session);
 
       if (paymentUrl) {
           window.location.href = paymentUrl;

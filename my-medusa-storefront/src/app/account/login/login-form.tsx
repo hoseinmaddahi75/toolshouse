@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, ArrowRight, CheckCircle, Smartphone, KeyRound } from "lucide-react";
-import Cookies from "js-cookie";
 import { MEDUSA_BACKEND_URL } from "@/lib/constants";
+import { setOtpCookie } from "./actions";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -69,11 +69,9 @@ export default function LoginForm() {
 
     if (!res.ok) throw new Error(data.message || "کد اشتباه است");
 
-    // ✅ تغییر مهم: ذخیره نشست (Session)
-    // ما اطلاعات مشتری را در کوکی ذخیره می‌کنیم تا Layout بتواند آن را بخواند
-    // (در سیستم واقعی بهتر است توکن JWT باشد، اما برای الان آیدی کافیست)
-    if (data.customer?.id) {
-       Cookies.set("_medusa_jwt", data.customer.id, { expires: 7 }); // 7 روز اعتبار
+    // ✅ ذخیره JWT به صورت httpOnly از طریق server action
+    if (data.access_token) {
+       await setOtpCookie(data.access_token);
     }
 
     // ریدایرکت

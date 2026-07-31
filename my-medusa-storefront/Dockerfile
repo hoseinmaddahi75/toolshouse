@@ -1,30 +1,38 @@
-# 1. مرحله بیلد (Builder)
-FROM node:20 AS builder
+# Multi-stage Dockerfile for Next.js Frontend
+# Stage 1: Build the application
+FROM node:20-alpine AS builder
+
 WORKDIR /app
 
-# کپی کردن مستقیم فایل‌ها از سیستم شما
-# (چون اینترنت داخل داکر اذیت می‌کند)
-COPY package.json ./
-COPY node_modules ./node_modules
-COPY . .
+# Copy package files first for better caching
+COPY my-medusa-storefront/package.json my-medusa-storefront/package-lock.json ./
 
-# تنظیم متغیرها
-ARG NEXT_PUBLIC_MEDUSA_BACKEND_URL
-ARG NEXT_PUBLIC_BASE_URL
-ENV NEXT_PUBLIC_MEDUSA_BACKEND_URL=$NEXT_PUBLIC_MEDUSA_BACKEND_URL
-ENV NEXT_PUBLIC_BASE_URL=$NEXT_PUBLIC_BASE_URL
-ARG MEDUSA_BACKEND_URL
-ENV MEDUSA_BACKEND_URL=$MEDUSA_BACKEND_URL
+# Install dependencies
+RUN npm ci
 
-# اجرای بیلد (اینجا به اینترنت نیاز ندارد چون ماژول‌ها هستند)
+# Copy all source files
+COPY my-medusa-storefront/ .
+
+# Build the application
 RUN npm run build
 
-# 2. مرحله نهایی (سبک‌سازی)
-FROM node:20-slim
+# Stage 2: Create production image
+FROM node:20-alpine AS runner
+
 WORKDIR /app
-COPY --from=builder /app/package.json ./
+
+# Copy only necessary files from builder
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/package-lock.json ./package-lock.json
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
-CMD ["npm", "start"]
+# Environment variables
+ENV NODE_ENV production
+ENV PORT 3000
+
+EXPOSE 3000
+
+CMD ["node", "server.js"]

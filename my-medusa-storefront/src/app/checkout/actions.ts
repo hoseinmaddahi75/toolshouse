@@ -1,7 +1,7 @@
 "use server";
 
 import { getMedusaHeaders, BACKEND_URL } from "@/lib/medusa-client";
-import { cookies } from "next/headers";
+import { getAuthDataFromCookie } from "@/lib/auth";
 
 export async function ensureCartOwnership(cartId: string) {
   const headers = await getHeadersWithAuth();
@@ -54,15 +54,16 @@ export async function ensureCartOwnership(cartId: string) {
 // --- تابعی برای ساخت هدرهای اختصاصی ---
 async function getHeadersWithAuth() {
   const baseHeaders = getMedusaHeaders();
-  const cookieStore = await cookies();
-  const customerId = cookieStore.get("_medusa_jwt")?.value;
+  const { customerId, jwt } = await getAuthDataFromCookie();
 
-  // اگر توکن مشتری وجود داشت، در هدر x-customer-id قرار می‌دهیم
-  // این هدر را میدلورهای بک‌اِند ما می‌شناسند
   const headers: any = {
     ...baseHeaders,
     "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
   };
+
+  if (jwt) {
+    headers["Authorization"] = `Bearer ${jwt}`;
+  }
 
   if (customerId) {
     headers["x-customer-id"] = customerId;
@@ -242,38 +243,5 @@ export async function setPaymentSessionAction(cartId: string, providerId: string
     return { success: true };
   } catch (e) {
     return { success: false };
-  }
-}
-
-// ۷. ثبت نهایی سفارش
-export async function placeOrderAction(cartId: string) {
-  try {
-    const headers = await getHeadersWithAuth();
-
-    const res = await fetch(`${BACKEND_URL}/store/carts/${cartId}/complete`, {
-      method: "POST",
-      headers: headers,
-      cache: "no-store",
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-       console.error("Complete Error Body:", data);
-       throw new Error(data.message || "خطا در تکمیل سفارش");
-    }
-
-    if (data.type === "order") {
-        const orderObj = data.order || data.data;
-        if (orderObj && orderObj.id) {
-            return { success: true, type: "order", orderId: orderObj.id };
-        }
-    }
-
-    return { success: false, error: "سفارش ثبت شد اما اطلاعات بازگشتی نامعتبر است." };
-
-  } catch (error: any) {
-    console.error("Place Order Action Failed:", error);
-    return { success: false, error: error.message };
   }
 }

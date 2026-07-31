@@ -5,13 +5,15 @@ import { completeCartWorkflow } from "@medusajs/medusa/core-flows";
 export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
   const { Status, Authority } = req.query;
   const FRONTEND_URL = process.env.STORE_URL || "http://localhost:3000";
+  const query = req.scope.resolve(ContainerRegistrationKeys.QUERY);
 
   if (Status !== "OK" || !Authority) {
       return res.redirect(`${FRONTEND_URL}/checkout?payment_status=failed`);
   }
 
+  let cartId: string | null = null;
+
   try {
-    const query = req.scope.resolve(ContainerRegistrationKeys.QUERY);
     const paymentModule = req.scope.resolve(Modules.PAYMENT);
 
     // ۱. پیدا کردن سشن
@@ -26,7 +28,7 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
     }
 
     const session = paymentSessions[0];
-    const cartId = session.payment_collection.cart.id;
+    cartId = session.payment_collection.cart.id;
 
     // ۲. تایید و کپچر
     const payment = await paymentModule.authorizePaymentSession(session.id, {});
@@ -34,7 +36,7 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
         await paymentModule.capturePayment({ payment_id: payment.id, amount: payment.amount }).catch(() => {});
     }
 
-    // ۳. تکمیل سفارش (اینجا چون customer_id قبلاً در چک‌اوت ست شده، خود مدوسا آن را می‌شناسد)
+    // ۳. تکمیل سفارش
     const { result } = await completeCartWorkflow(req.scope).run({
       input: { id: cartId },
     });
@@ -48,6 +50,18 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
   } catch (error: any) {
     console.error("Verify Error:", error);
     if (error.message.includes("completed")) {
+         try {
+           if (cartId) {
+             const { data: orders } = await query.graph({
+               entity: "order",
+               fields: ["id"],
+               filters: { cart_id: cartId },
+             });
+             if (orders?.length > 0) {
+               return res.redirect(`${FRONTEND_URL}/checkout?payment_status=success&order_id=${orders[0].id}`);
+             }
+           }
+         } catch {}
          return res.redirect(`${FRONTEND_URL}/checkout?payment_status=success`);
     }
     return res.redirect(`${FRONTEND_URL}/checkout?payment_status=error&message=${error.message}`);

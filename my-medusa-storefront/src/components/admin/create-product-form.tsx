@@ -31,14 +31,12 @@ const sanitizeHandle = (text: string) => {
   return text.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-").replace(/^-+|-+$/g, "");
 };
 
-// 👇 دریافت توکن به عنوان پراپ
 export default function CreateProductForm({ token }: { token: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [fetchingDefaults, setFetchingDefaults] = useState(true);
   const BASE_URL = MEDUSA_BACKEND_URL;
 
-  // هدر احراز هویت برای تمام درخواست‌ها
   const authHeaders = {
     "Authorization": `Bearer ${token}`
   };
@@ -74,25 +72,29 @@ export default function CreateProductForm({ token }: { token: string }) {
     const fetchData = async () => {
       try {
         setFetchingDefaults(true);
-        // 👇 اضافه کردن هدر Auth به تمام درخواست‌ها
+        const safeFetch = async (url: string) => {
+          try {
+            const res = await fetch(url, { headers: authHeaders });
+            return res.ok ? res : null;
+          } catch { return null; }
+        };
+
         const [attrsRes, specsRes, sizesRes, scRes, spRes, locRes] = await Promise.all([
-            fetch(`${BASE_URL}/admin/global-attributes`, { headers: authHeaders }),
-            fetch(`${BASE_URL}/admin/product-resources?type=specs`, { headers: authHeaders }),
-            fetch(`${BASE_URL}/admin/product-resources?type=sizes`, { headers: authHeaders }),
-            fetch(`${BASE_URL}/admin/sales-channels`, { headers: authHeaders }),
-            fetch(`${BASE_URL}/admin/shipping-profiles`, { headers: authHeaders }),
-            fetch(`${BASE_URL}/admin/stock-locations`, { headers: authHeaders }),
+            safeFetch(`${BASE_URL}/admin/global-attributes`),
+            safeFetch(`${BASE_URL}/admin/product-resources?type=specs`),
+            safeFetch(`${BASE_URL}/admin/product-resources?type=sizes`),
+            safeFetch(`${BASE_URL}/admin/sales-channels`),
+            safeFetch(`${BASE_URL}/admin/shipping-profiles`),
+            safeFetch(`${BASE_URL}/admin/stock-locations`),
         ]);
 
-        if (!attrsRes.ok && attrsRes.status === 401) throw new Error("لطفا مجدد وارد شوید");
+        if (attrsRes) { const data = await attrsRes.json(); setGlobalAttributes(data.attributes || data || []); }
+        if (specsRes) { const data = await specsRes.json(); setSpecTemplates(data.data || []); }
+        if (sizesRes) { const data = await sizesRes.json(); setSizeGuides(data.data || []); }
 
-        if (attrsRes.ok) { const data = await attrsRes.json(); setGlobalAttributes(data.attributes || data || []); }
-        if (specsRes.ok) { const data = await specsRes.json(); setSpecTemplates(data.data || []); }
-        if (sizesRes.ok) { const data = await sizesRes.json(); setSizeGuides(data.data || []); }
-
-        if (scRes.ok) { const scData = await scRes.json(); if (scData.sales_channels?.length > 0) setDefaultSalesChannelId(scData.sales_channels[0].id); }
-        if (spRes.ok) { const spData = await spRes.json(); const def = spData.shipping_profiles?.find((p: any) => p.type === "default") || spData.shipping_profiles?.[0]; if (def) setDefaultShippingProfileId(def.id); }
-        if (locRes.ok) { const locData = await locRes.json(); if (locData.stock_locations?.length > 0) setStockLocationId(locData.stock_locations[0].id); }
+        if (scRes) { const scData = await scRes.json(); if (scData.sales_channels?.length > 0) setDefaultSalesChannelId(scData.sales_channels[0].id); }
+        if (spRes) { const spData = await spRes.json(); const def = spData.shipping_profiles?.find((p: any) => p.type === "default") || spData.shipping_profiles?.[0]; if (def) setDefaultShippingProfileId(def.id); }
+        if (locRes) { const locData = await locRes.json(); if (locData.stock_locations?.length > 0) setStockLocationId(locData.stock_locations[0].id); }
 
       } catch (error: any) {
         console.error("Error fetching data:", error);
@@ -160,11 +162,12 @@ export default function CreateProductForm({ token }: { token: string }) {
       formData.append("files", file);
       const toastId = toast.loading("در حال آپلود...");
       try {
-        // 👇 آپلود فایل با هدر Auth
         const res = await fetch(`${BASE_URL}/admin/uploads`, {
-          method: "POST", body: formData, headers: { "Authorization": `Bearer ${token}` }, 
+          method: "POST", body: formData, headers: { "Authorization": `Bearer ${token}` },
         });
+        if (!res.ok) throw new Error("خطا در آپلود");
         const data = await res.json();
+        if (!data.files?.[0]?.url) throw new Error("پاسخ سرور نامعتبر");
         const isFirst = images.length === 0;
         setImages(prev => [...prev, { url: data.files[0].url, isThumbnail: isFirst }]);
         toast.dismiss(toastId); toast.success("تصویر آپلود شد");
@@ -178,6 +181,8 @@ export default function CreateProductForm({ token }: { token: string }) {
     e.preventDefault();
     if (!title) return toast.error("نام محصول الزامی است");
     if (productType === "simple" && !simplePrice) return toast.error("قیمت محصول ساده الزامی است");
+    if (productType === "variable" && variants.length === 0) return toast.error("برای محصول متغیر حداقل یک واریانت لازم است");
+    if (productType === "variable" && variants.some(v => !v.price || Number(v.price) <= 0)) return toast.error("تمام واریانت‌ها باید قیمت داشته باشند");
     
     setLoading(true);
     try {
@@ -220,7 +225,6 @@ export default function CreateProductForm({ token }: { token: string }) {
         }));
       }
 
-      // 👇 ارسال درخواست ساخت با Auth Header
       const createRes = await fetch(`${BASE_URL}/admin/products`, {
         method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify(payload),
@@ -237,28 +241,35 @@ export default function CreateProductForm({ token }: { token: string }) {
       await new Promise(r => setTimeout(r, 1000));
       
       const freshDetails = await fetch(`${BASE_URL}/admin/products/${productId}/details`, { headers: authHeaders });
+      if (!freshDetails.ok) {
+          toast.success("محصول ساخته شد ولی به‌روزرسانی موجودی انجام نشد.");
+          router.push(`/dashboard/products/${productId}/edit`);
+          return;
+      }
       const { product: freshProduct } = await freshDetails.json();
 
-      const updatePromises = freshProduct.variants.map(async (rv: any) => {
-          const invItemId = rv.inventory_item_id; 
-          if (!invItemId || !stockLocationId) return;
+      if (freshProduct?.variants?.length > 0) {
+          const updatePromises = freshProduct.variants.map(async (rv: any) => {
+              const invItemId = rv.inventory_item_id;
+              if (!invItemId || !stockLocationId) return;
 
-          let targetStock = 0;
-          if (productType === "simple") {
-              targetStock = Number(simpleInventory);
-          } else {
-              const localV = variants.find(v => v.title === rv.title);
-              targetStock = localV ? Number(localV.inventory) : 0;
-          }
+              let targetStock = 0;
+              if (productType === "simple") {
+                  targetStock = Number(simpleInventory);
+              } else {
+                  const localV = variants.find(v => v.title === rv.title);
+                  targetStock = localV ? Number(localV.inventory) : 0;
+              }
 
-          if (targetStock >= 0) {
-              await fetch(`${BASE_URL}/admin/inventory-items/${invItemId}/location-levels`, {
-                  method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
-                  body: JSON.stringify({ location_id: stockLocationId, stocked_quantity: targetStock }),
-              });
-          }
-      });
-      await Promise.all(updatePromises);
+              if (targetStock >= 0) {
+                  await fetch(`${BASE_URL}/admin/inventory-items/${invItemId}/location-levels`, {
+                      method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
+                      body: JSON.stringify({ location_id: stockLocationId, stocked_quantity: targetStock }),
+                  });
+              }
+          });
+          await Promise.all(updatePromises);
+      }
       
       toast.success("محصول با موفقیت ساخته شد!");
       router.push(`/dashboard/products/${productId}/edit`);

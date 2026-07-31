@@ -1,7 +1,7 @@
-import { cookies } from "next/headers";
-import EditAddressForm from "./edit-form"; // 👈 مسیر درست: همین پوشه
+import EditAddressForm from "./edit-form";
 import { notFound } from "next/navigation";
 import { MEDUSA_BACKEND_URL } from "@/lib/constants";
+import { getCustomerIdFromCookie } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -10,8 +10,7 @@ export default async function EditAddressPage({ params }: { params: Promise<{ id
   const BASE_URL = MEDUSA_BACKEND_URL;
   const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
   
-  const cookieStore = await cookies();
-  const customerId = cookieStore.get("_medusa_jwt")?.value;
+  const customerId = await getCustomerIdFromCookie();
 
   let address = null;
 

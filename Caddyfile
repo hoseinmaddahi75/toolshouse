@@ -1,0 +1,7 @@
+toolshouse.ir {
+    reverse_proxy frontend:3000
+}
+
+api.toolshouse.ir {
+    reverse_proxy backend:9000
+}

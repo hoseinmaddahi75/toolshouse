@@ -238,3 +238,17 @@
   color: #000;
   font-weight: 700;
 }
+
+
+.blog-content * {
+  max-width: 100% !important;
+}
+.blog-content img,
+.blog-content video,
+.blog-content iframe {
+  height: auto;
+}
+.blog-content table {
+  display: block;
+  overflow-x: auto;
+}

@@ -3,17 +3,16 @@ import { formatPrice } from "@/lib/medusa-client";
 import { CheckCircle, Package, ArrowLeft, Printer } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { cookies } from "next/headers";
-import ClearCartEffect from "./clear-cart-effect"; // 👈 کامپوننت جدید که پایین‌تر می‌سازیم
+import ClearCartEffect from "./clear-cart-effect";
 import { MEDUSA_BACKEND_URL } from "@/lib/constants";
+import { getCustomerIdFromCookie } from "@/lib/auth";
 
 export default async function OrderConfirmedPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const BASE_URL = MEDUSA_BACKEND_URL;
   const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
   
-  const cookieStore = await cookies();
-  const customerId = cookieStore.get("_medusa_jwt")?.value;
+  const customerId = await getCustomerIdFromCookie();
 
   let order = null;
 

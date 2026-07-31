@@ -1,4 +1,3 @@
-// src/components/admin/category-selector.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -15,22 +14,20 @@ type Category = {
   category_children?: Category[];
 };
 
-// 👇 تغییر ۱: اضافه کردن token به تایپ
 type CategorySelectorProps = {
   selectedIds: string[];
   onChange: (ids: string[]) => void;
-  token: string; 
+  token: string;
 };
 
-// کامپوننت داخلی برای نمایش هر سطر (بدون تغییر)
-const CategoryItem = ({ 
-  category, 
-  level = 0, 
-  selectedIds, 
-  onToggle 
-}: { 
-  category: Category; 
-  level?: number; 
+const CategoryItem = ({
+  category,
+  level = 0,
+  selectedIds,
+  onToggle
+}: {
+  category: Category;
+  level?: number;
   selectedIds: string[];
   onToggle: (id: string) => void;
 }) => {
@@ -40,13 +37,13 @@ const CategoryItem = ({
 
   return (
     <div className="select-none">
-      <div 
+      <div
         className={cn(
           "flex items-center gap-2 py-1.5 rounded hover:bg-gray-50 transition-colors",
           level > 0 && "mr-4 border-r border-gray-200 pr-2"
         )}
       >
-        <button 
+        <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
           className={cn(
@@ -57,14 +54,14 @@ const CategoryItem = ({
           {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </button>
 
-        <Checkbox 
-          id={category.id} 
+        <Checkbox
+          id={category.id}
           checked={isSelected}
           onCheckedChange={() => onToggle(category.id)}
         />
 
-        <Label 
-          htmlFor={category.id} 
+        <Label
+          htmlFor={category.id}
           className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer flex-1"
         >
           <Folder className={cn("h-4 w-4", isSelected ? "text-blue-500" : "text-gray-400")} />
@@ -75,11 +72,11 @@ const CategoryItem = ({
       {isOpen && hasChildren && (
         <div className="mr-2">
           {category.category_children!.map((child) => (
-            <CategoryItem 
-              key={child.id} 
-              category={child} 
-              level={level + 1} 
-              selectedIds={selectedIds} 
+            <CategoryItem
+              key={child.id}
+              category={child}
+              level={level + 1}
+              selectedIds={selectedIds}
               onToggle={onToggle}
             />
           ))}
@@ -89,7 +86,6 @@ const CategoryItem = ({
   );
 };
 
-// 👇 دریافت token از پراپ‌ها
 export default function CategorySelector({ selectedIds, onChange, token }: CategorySelectorProps) {
   const [rootCategories, setRootCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,42 +93,35 @@ export default function CategorySelector({ selectedIds, onChange, token }: Categ
 
   useEffect(() => {
     const fetchCategories = async () => {
-      // اگر توکن هنوز نرسیده، کاری نکن (منتظر بمان)
       if (!token) return;
 
       try {
-        const url = `${BASE_URL}/admin/product-categories?include_descendants_tree=true&fields=id,name,parent_category_id,category_children`;
-        
-        // 👇 تغییر حیاتی: استفاده از هدر Authorization به جای credentials
-        const res = await fetch(url, {
-          headers: { 
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}` // 🔑 کلید ورود اینجاست
-          },
-          cache: "no-store"
-        });
-        
-        if (!res.ok) {
-            console.error(`Categories Fetch Error: ${res.status}`);
-            return;
-        }
+        const res = await fetch(
+          `${BASE_URL}/admin/product-categories?include_descendants_tree=true&fields=id,name,parent_category_id,category_children`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`
+            },
+            cache: "no-store"
+          }
+        );
+
+        if (!res.ok) return;
 
         const data = await res.json();
         const allCategories = data.product_categories || [];
-        
-        // فیلتر کردن ریشه
         const roots = allCategories.filter((cat: Category) => cat.parent_category_id === null);
-        
         setRootCategories(roots);
-      } catch (error) {
-        console.error("Error fetching categories:", error);
+      } catch {
+        // silently fail — categories are optional
       } finally {
         setLoading(false);
       }
     };
 
     fetchCategories();
-  }, [token]); // 👈 وابستگی به توکن
+  }, [token, BASE_URL]);
 
   const handleToggle = (id: string) => {
     if (selectedIds.includes(id)) {
@@ -149,11 +138,11 @@ export default function CategorySelector({ selectedIds, onChange, token }: Categ
   return (
     <div className="border rounded-md p-2 max-h-[300px] overflow-y-auto bg-white/50">
       {rootCategories.map((cat) => (
-        <CategoryItem 
-          key={cat.id} 
-          category={cat} 
-          selectedIds={selectedIds} 
-          onToggle={handleToggle} 
+        <CategoryItem
+          key={cat.id}
+          category={cat}
+          selectedIds={selectedIds}
+          onToggle={handleToggle}
         />
       ))}
     </div>
