@@ -25,7 +25,7 @@ WORKDIR /app
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/yarn.lock ./yarn.lock
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/.medusa/server ./.medusa/server
 COPY --from=builder /app/medusa-config.ts ./medusa-config.ts
 COPY --from=builder /app/static ./static
 
