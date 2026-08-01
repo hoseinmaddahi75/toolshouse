@@ -185,14 +185,14 @@ export default async function Footer() {
         {/* فوتر پایین */}
         <div className="mt-16 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-xs text-gray-500">
-            © ۱۴۰۳ تمامی حقوق محفوظ است. طراحی و توسعه توسط{" "}
+            © 1405 تمامی حقوق محفوظ است. طراحی و توسعه توسط{" "}
             <a 
-              href="https://disy.agency" 
+              href="https://hmaddahi.ir" 
               target="_blank" 
               rel="nofollow" 
               className="text-white font-bold hover:text-[#B19276] transition-colors"
             >
-              منظومه دیجیتال
+            حسین مداحی
             </a>
           </p>
           

@@ -67,6 +67,7 @@ jobs:
       - name: Deploy to server
         run: |
           ssh -p ${SECRET_PORT} -o StrictHostKeyChecking=no ${SECRET_USER}@${SECRET_HOST} "
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin &&
             cd ~/toolshouse &&
             docker compose pull &&
             docker compose up -d --remove-orphans &&
