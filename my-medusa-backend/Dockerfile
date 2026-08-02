@@ -13,7 +13,7 @@ RUN yarn install --frozen-lockfile
 # Copy all source files
 COPY . .
 
-# 👇 دستور رسمی و دقیقِ مدوسا برای بیلد کامل (بک‌اند + ادمین)
+# Build the application (بک‌اند و ادمین ساخته می‌شوند)
 ENV NODE_ENV=production
 RUN npx medusa build
 
@@ -29,13 +29,19 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/medusa-config.ts ./medusa-config.ts
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
-# Copy generated folders with wildcards (ضدضربه در برابر ارورِ پیدا نشدن پوشه)
+# Copy generated folders
 COPY --from=builder /app/.medus[a] ./.medusa
 COPY --from=builder /app/buil[d] ./build
 COPY --from=builder /app/dis[t] ./dist
 COPY --from=builder /app/sr[c] ./src
 COPY --from=builder /app/publi[c] ./public
 COPY --from=builder /app/stati[c] ./static
+
+# 🎯 راه‌حل مبتنی بر فکت: کپی کردن پنل ادمین به مسیرهای پیش‌فرضِ سرور
+RUN mkdir -p build/public/admin build/admin public/admin && \
+    cp -r .medusa/server/public/admin/* build/public/admin/ || true && \
+    cp -r .medusa/server/public/admin/* build/admin/ || true && \
+    cp -r .medusa/server/public/admin/* public/admin/ || true
 
 # Environment variables
 ENV NODE_ENV=production
