@@ -22,7 +22,7 @@ const vazir = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "فروشگاه مدوسا",
+  title: "خانه ابزار",
   description: "فروشگاه اینترنتی مدرن با نکست جی‌اس و مدوسا",
 };
 
