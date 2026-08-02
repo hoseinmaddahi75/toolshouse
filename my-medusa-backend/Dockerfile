@@ -11,7 +11,7 @@ COPY my-medusa-backend/package.json my-medusa-backend/yarn.lock ./
 RUN yarn install --frozen-lockfile
 
 # Copy all source files
-COPY my-medusa-backend/ .
+COPY . .
 
 # Build the application
 RUN yarn build
