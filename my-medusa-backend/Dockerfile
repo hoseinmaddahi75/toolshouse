@@ -21,13 +21,15 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy mandatory files (قطعا وجود دارند)
+# Copy mandatory files (فایل‌های حیاتی)
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/yarn.lock ./yarn.lock
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/medusa-config.ts ./medusa-config.ts
+# 👇 این خط گم‌شده بود که اضافه شد:
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
-# Copy optional files with wildcards (هرگز ارور نمیدهند)
+# Copy optional files with wildcards
 COPY --from=builder /app/dis[t] ./dist
 COPY --from=builder /app/sr[c] ./src
 COPY --from=builder /app/buil[d] ./build

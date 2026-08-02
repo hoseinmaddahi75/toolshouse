@@ -129,12 +129,70 @@ export default function CategoriesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("برای ایجاد یا ویرایش دسته‌بندی‌ها، لطفا از پنل ادمین مدوسا استفاده کنید.");
+    setLoading(true);
+    
+    const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+    const adminToken = "[REDACTED]";
+    
+    const url = editingId
+      ? `${backendUrl}/admin/product-categories/${editingId}`
+      : `${backendUrl}/admin/product-categories`;
+
+    const payload = {
+      name: formData.name,
+      handle: formData.handle,
+      description: formData.description,
+      is_active: formData.is_active,
+      is_internal: formData.is_internal,
+      parent_category_id: formData.parent_category_id === "" ? null : formData.parent_category_id
+    };
+
+    try {
+      const res = await fetch(url, {
+        method: editingId ? "PUT" : "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${adminToken}`
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Operation failed");
+      }
+
+      await fetchCategories();
+      setIsModalOpen(false);
+    } catch (error: any) {
+      console.error(error);
+      alert(`خطا: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("آیا از حذف این دسته‌بندی مطمئن هستید؟ تمام زیردسته‌های آن هم حذف یا یتیم خواهند شد.")) return;
-    alert("برای حذف دسته‌بندی‌ها، لطفا از پنل ادمین مدوسا استفاده کنید.");
+    
+    const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+    const adminToken = "[REDACTED]";
+    
+    try {
+      const res = await fetch(`${backendUrl}/admin/product-categories/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+          "Authorization": `Bearer ${adminToken}`
+        }
+      });
+      
+      if (res.ok) fetchCategories();
+    } catch (error) {
+      console.error(error);
+      alert("خطا در حذف");
+    }
   };
 
   if (loading && !isModalOpen && categories.length === 0) return <div className="p-10 text-center text-gray-500">در حال بارگذاری دسته‌بندی‌ها...</div>;
