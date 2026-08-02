@@ -5,13 +5,13 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy package files first for better caching
-COPY my-medusa-storefront/package.json my-medusa-storefront/package-lock.json ./
+COPY package.json package-lock.json ./
 
 # Install dependencies
 RUN npm ci
 
 # Copy all source files
-COPY my-medusa-storefront/ .
+COPY . .
 
 # Build the application
 RUN npm run build
@@ -30,8 +30,8 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
 # Environment variables
-ENV NODE_ENV production
-ENV PORT 3000
+ENV NODE_ENV=production
+ENV PORT=3000
 
 EXPOSE 3000
 
