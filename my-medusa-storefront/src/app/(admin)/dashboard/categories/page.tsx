@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import {
   FolderPlusIcon,
   PencilSquareIcon,
@@ -9,6 +10,12 @@ import {
   FolderIcon,
   ChevronLeftIcon
 } from "@heroicons/react/24/outline";
+import {
+  getCategoriesAction,
+  createCategoryAction,
+  updateCategoryAction,
+  deleteCategoryAction
+} from "./actions";
 
 interface ProductCategory {
   id: string;
@@ -29,8 +36,11 @@ interface CategoryTreeNode extends ProductCategory {
 }
 
 export default function CategoriesPage() {
+  const router = useRouter();
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [serverLoading, setServerLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -46,26 +56,14 @@ export default function CategoriesPage() {
 
   const fetchCategories = async () => {
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
-      const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "pk_82b953b964ad71f051bb02d1382200901c260d0e8628f845fd00856125b14336";
-      
-      const res = await fetch(`${backendUrl}/store/product-categories?limit=1000`, {
-        credentials: "include",
-        headers: {
-          "x-publishable-api-key": publishableKey,
-          "Content-Type": "application/json"
-        }
-      });
-      
-      if (!res.ok) {
-        const errorData = await res.text();
-        throw new Error(`API Error: ${res.status} - ${errorData}`);
-      }
-      
-      const data = await res.json();
+      setLoading(true);
+      const data = await getCategoriesAction();
       setCategories(data.product_categories || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching categories:", error);
+      if (error.message?.includes("NEXT_REDIRECT")) {
+        router.push("/admin/login");
+      }
     } finally {
       setLoading(false);
     }
@@ -129,15 +127,9 @@ export default function CategoriesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    
-    const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
-    const adminToken = "[REDACTED]";
-    
-    const url = editingId
-      ? `${backendUrl}/admin/product-categories/${editingId}`
-      : `${backendUrl}/admin/product-categories`;
-
+    setServerLoading(true);
+    setActionError(null);
+  
     const payload = {
       name: formData.name,
       handle: formData.handle,
@@ -146,52 +138,32 @@ export default function CategoriesPage() {
       is_internal: formData.is_internal,
       parent_category_id: formData.parent_category_id === "" ? null : formData.parent_category_id
     };
-
+  
     try {
-      const res = await fetch(url, {
-        method: editingId ? "PUT" : "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${adminToken}`
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Operation failed");
+      if (editingId) {
+        await updateCategoryAction(editingId, payload);
+      } else {
+        await createCategoryAction(payload);
       }
-
       await fetchCategories();
       setIsModalOpen(false);
     } catch (error: any) {
       console.error(error);
-      alert(`خطا: ${error.message}`);
+      setActionError(error.message || "خطا در ذخیره‌سازی");
     } finally {
-      setLoading(false);
+      setServerLoading(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("آیا از حذف این دسته‌بندی مطمئن هستید؟ تمام زیردسته‌های آن هم حذف یا یتیم خواهند شد.")) return;
-    
-    const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
-    const adminToken = "[REDACTED]";
-    
+    if (!confirm("آیا از حذف این دستهبندی مطمئن هستید؟ تمام زیردستههای آن هم حذف یا یتیم خواهند شد.")) return;
+  
     try {
-      const res = await fetch(`${backendUrl}/admin/product-categories/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-        headers: {
-          "Authorization": `Bearer ${adminToken}`
-        }
-      });
-      
-      if (res.ok) fetchCategories();
-    } catch (error) {
+      await deleteCategoryAction(id);
+      await fetchCategories();
+    } catch (error: any) {
       console.error(error);
-      alert("خطا در حذف");
+      setActionError(error.message || "خطا در حذف");
     }
   };
 
@@ -216,6 +188,13 @@ export default function CategoriesPage() {
           افزودن دسته جدید
         </button>
       </div>
+
+      {actionError && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 flex items-center gap-3">
+          <XMarkIcon className="w-5 h-5" />
+          <span className="text-sm">{actionError}</span>
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
