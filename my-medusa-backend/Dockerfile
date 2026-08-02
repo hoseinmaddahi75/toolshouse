@@ -30,6 +30,7 @@ COPY --from=builder /app/medusa-config.ts ./medusa-config.ts
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 COPY --from=builder /app/static ./static
 COPY --from=builder /app/src ./src
+COPY --from=builder /app/build ./build
 
 # Environment variables
 ENV NODE_ENV=production

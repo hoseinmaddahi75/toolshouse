@@ -17,9 +17,9 @@ module.exports = defineConfig({
         httpOnly: true,
         maxAge: 24 * 60 * 60 * 1000,
       },
-      storeCors: process.env.STORE_CORS || "https://toolshouse.ir,https://www.toolshouse.ir",
-      adminCors: process.env.ADMIN_CORS || "https://api.toolshouse.ir,https://toolshouse.ir,https://www.toolshouse.ir",
-      authCors: process.env.AUTH_CORS || "https://api.toolshouse.ir,https://toolshouse.ir,https://www.toolshouse.ir",
+      storeCors: process.env.STORE_CORS || "https://toolshouse.ir,https://www.toolshouse.ir,http://localhost:3000",
+      adminCors: process.env.ADMIN_CORS || "https://api.toolshouse.ir,https://toolshouse.ir,https://www.toolshouse.ir,http://localhost:3000",
+      authCors: process.env.AUTH_CORS || "https://api.toolshouse.ir,https://toolshouse.ir,https://www.toolshouse.ir,http://localhost:3000",
       jwtSecret: process.env.JWT_SECRET || "supersecret",
       cookieSecret: process.env.COOKIE_SECRET || "supersecret",
     }

@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { 
-  FolderPlusIcon, 
-  PencilSquareIcon, 
-  TrashIcon, 
+import {
+  FolderPlusIcon,
+  PencilSquareIcon,
+  TrashIcon,
   XMarkIcon,
   FolderIcon,
-  ChevronLeftIcon // آیکون برای نمایش فرزند
+  ChevronLeftIcon
 } from "@heroicons/react/24/outline";
 
 interface ProductCategory {
@@ -23,9 +23,8 @@ interface ProductCategory {
   rank?: number;
 }
 
-// اینترفیس کمکی برای نمایش درختی
 interface CategoryTreeNode extends ProductCategory {
-  level: number; // سطح تورفتگی (0 برای ریشه، 1 برای فرزند و...)
+  level: number;
   children?: CategoryTreeNode[];
 }
 
@@ -45,15 +44,26 @@ export default function CategoriesPage() {
     parent_category_id: ""
   });
 
-  // --- دریافت اطلاعات ---
   const fetchCategories = async () => {
     try {
-      // دریافت لیست مسطح از سرور
-      const res = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/admin/product-categories?limit=1000`, {
+      const backendUrl = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
+      const publishableKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "pk_82b953b964ad71f051bb02d1382200901c260d0e8628f845fd00856125b14336";
+      
+      const res = await fetch(`${backendUrl}/store/product-categories?limit=1000`, {
         credentials: "include",
+        headers: {
+          "x-publishable-api-key": publishableKey,
+          "Content-Type": "application/json"
+        }
       });
+      
+      if (!res.ok) {
+        const errorData = await res.text();
+        throw new Error(`API Error: ${res.status} - ${errorData}`);
+      }
+      
       const data = await res.json();
-      setCategories(data.product_categories || []); 
+      setCategories(data.product_categories || []);
     } catch (error) {
       console.error("Error fetching categories:", error);
     } finally {
@@ -65,7 +75,6 @@ export default function CategoriesPage() {
     fetchCategories();
   }, []);
 
-  // --- تبدیل لیست مسطح به لیست درختی و مرتب‌شده ---
   const organizedCategories = useMemo(() => {
     const buildTree = (cats: ProductCategory[], parentId: string | null = null, level = 0): CategoryTreeNode[] => {
       return cats
@@ -82,16 +91,15 @@ export default function CategoriesPage() {
     return buildTree(categories);
   }, [categories]);
 
-  // --- هندلرهای فرم ---
   const openCreateModal = () => {
     setEditingId(null);
-    setFormData({ 
-      name: "", 
-      handle: "", 
-      description: "", 
-      is_active: true, 
+    setFormData({
+      name: "",
+      handle: "",
+      description: "",
+      is_active: true,
       is_internal: false,
-      parent_category_id: "" 
+      parent_category_id: ""
     });
     setIsModalOpen(true);
   };
@@ -111,7 +119,6 @@ export default function CategoriesPage() {
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const name = e.target.value;
-    // ساخت خودکار هندل (Slug) فقط موقع ساختن جدید
     if (!editingId) {
       const generatedHandle = name.trim().toLowerCase().replace(/\s+/g, '-');
       setFormData(prev => ({ ...prev, name, handle: generatedHandle }));
@@ -122,59 +129,12 @@ export default function CategoriesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-
-    const url = editingId 
-      ? `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/admin/product-categories/${editingId}`
-      : `${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/admin/product-categories`;
-
-    const payload = {
-      name: formData.name,
-      handle: formData.handle,
-      description: formData.description,
-      is_active: formData.is_active,
-      is_internal: formData.is_internal,
-      // نکته مهم: اگر خالی بود باید null بفرستیم
-      parent_category_id: formData.parent_category_id === "" ? null : formData.parent_category_id
-    };
-
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Operation failed");
-      }
-
-      await fetchCategories();
-      setIsModalOpen(false);
-    } catch (error: any) {
-      console.error(error);
-      alert(`خطا: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
+    alert("برای ایجاد یا ویرایش دسته‌بندی‌ها، لطفا از پنل ادمین مدوسا استفاده کنید.");
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("آیا از حذف این دسته‌بندی مطمئن هستید؟ تمام زیردسته‌های آن هم حذف یا یتیم خواهند شد.")) return;
-
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL}/admin/product-categories/${id}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-      
-      if (res.ok) fetchCategories();
-    } catch (error) {
-      console.error(error);
-      alert("خطا در حذف");
-    }
+    alert("برای حذف دسته‌بندی‌ها، لطفا از پنل ادمین مدوسا استفاده کنید.");
   };
 
   if (loading && !isModalOpen && categories.length === 0) return <div className="p-10 text-center text-gray-500">در حال بارگذاری دسته‌بندی‌ها...</div>;
@@ -182,7 +142,6 @@ export default function CategoriesPage() {
   return (
     <div className="p-8 bg-gray-50 min-h-screen" dir="rtl">
       
-      {/* هدر صفحه */}
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
@@ -200,7 +159,6 @@ export default function CategoriesPage() {
         </button>
       </div>
 
-      {/* جدول نمایش */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
             <table className="w-full text-right min-w-[800px]">
@@ -283,7 +241,6 @@ export default function CategoriesPage() {
         )}
       </div>
 
-      {/* --- مودال ویرایش/ساخت --- */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setIsModalOpen(false)}>
           <div 
@@ -291,7 +248,6 @@ export default function CategoriesPage() {
             onClick={e => e.stopPropagation()}
           >
             
-            {/* هدر مودال */}
             <div className="bg-gray-50 px-8 py-6 border-b border-gray-100 flex justify-between items-center">
                 <h2 className="text-xl font-bold text-gray-800">
                 {editingId ? "ویرایش دسته‌بندی" : "ساخت دسته‌بندی جدید"}
@@ -306,36 +262,34 @@ export default function CategoriesPage() {
 
             <form onSubmit={handleSubmit} className="p-8 space-y-5 max-h-[80vh] overflow-y-auto">
               
-              {/* نام و اسلاگ */}
               <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2">
-                    <label className="block text-sm font-bold text-gray-700 mb-2">نام دسته‌بندی <span className="text-red-500">*</span></label>
-                    <input 
-                    type="text" 
-                    required
-                    value={formData.name}
-                    onChange={handleNameChange}
-                    placeholder="مثلاً: ابزار برقی"
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B19276] focus:ring-1 focus:ring-[#B19276] transition-all"
-                    />
-                  </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-bold text-gray-700 mb-2">نام دسته‌بندی <span className="text-red-500">*</span></label>
+                  <input 
+                  type="text" 
+                  required
+                  value={formData.name}
+                  onChange={handleNameChange}
+                  placeholder="مثلاً: ابزار برقی"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B19276] focus:ring-1 focus:ring-[#B19276] transition-all"
+                  />
+                </div>
 
-                  <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">شناسه URL (Handle) <span className="text-red-500">*</span></label>
-                    <div className="relative">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">/</span>
-                        <input 
-                        type="text" 
-                        required
-                        value={formData.handle}
-                        onChange={(e) => setFormData({...formData, handle: e.target.value})}
-                        className="w-full pl-8 pr-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B19276] font-mono text-sm dir-ltr text-right bg-gray-50"
-                        />
-                    </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">شناسه URL (Handle) <span className="text-red-500">*</span></label>
+                  <div className="relative">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">/</span>
+                      <input 
+                      type="text" 
+                      required
+                      value={formData.handle}
+                      onChange={(e) => setFormData({...formData, handle: e.target.value})}
+                      className="w-full pl-8 pr-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B19276] font-mono text-sm dir-ltr text-right bg-gray-50"
+                      />
                   </div>
+                </div>
               </div>
 
-              {/* انتخاب والد */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">دسته‌بندی والد (زیرمجموعه کدام دسته باشد؟)</label>
                 <div className="relative">
@@ -346,11 +300,9 @@ export default function CategoriesPage() {
                     >
                     <option value="">-- بدون والد (ریشه اصلی) --</option>
                     {organizedCategories.map((cat) => (
-                        // جلوگیری از انتخاب خودش به عنوان پدر خودش
                         cat.id !== editingId && (
                         <option key={cat.id} value={cat.id}>
-                            {/* نمایش تو رفتگی در لیست کشویی */}
-                            {"\u00A0".repeat(cat.level * 4) + (cat.level > 0 ? "↳ " : "") + cat.name}
+                            {" a0".repeat(cat.level * 4) + (cat.level > 0 ? "↳ " : "") + cat.name}
                         </option>
                         )
                     ))}
@@ -359,7 +311,6 @@ export default function CategoriesPage() {
                 </div>
               </div>
 
-              {/* توضیحات */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">توضیحات</label>
                 <textarea 
@@ -370,7 +321,6 @@ export default function CategoriesPage() {
                 />
               </div>
 
-              {/* تنظیمات وضعیت */}
               <div className="flex gap-6 pt-2 bg-gray-50 p-4 rounded-xl border border-gray-100">
                 <label className="flex items-center gap-3 cursor-pointer select-none group">
                   <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${formData.is_active ? 'bg-[#B19276] border-[#B19276]' : 'bg-white border-gray-300'}`}>
@@ -388,18 +338,17 @@ export default function CategoriesPage() {
                 <label className="flex items-center gap-3 cursor-pointer select-none group">
                    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${formData.is_internal ? 'bg-purple-600 border-purple-600' : 'bg-white border-gray-300'}`}>
                      {formData.is_internal && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
-                  </div>
-                  <input 
-                    type="checkbox" 
-                    className="hidden"
-                    checked={formData.is_internal}
-                    onChange={(e) => setFormData({...formData, is_internal: e.target.checked})}
-                  />
-                  <span className="text-sm text-gray-700 group-hover:text-black">فقط داخلی (Internal)</span>
+                   </div>
+                   <input 
+                     type="checkbox" 
+                     className="hidden"
+                     checked={formData.is_internal}
+                     onChange={(e) => setFormData({...formData, is_internal: e.target.checked})}
+                   />
+                   <span className="text-sm text-gray-700 group-hover:text-black">فقط داخلی (Internal)</span>
                 </label>
               </div>
 
-              {/* دکمه‌ها */}
               <div className="pt-6 flex gap-3">
                 <button 
                   type="button"
@@ -410,11 +359,9 @@ export default function CategoriesPage() {
                 </button>
                 <button 
                   type="submit"
-                  disabled={loading}
-                  className="flex-1 bg-black text-white py-3 rounded-xl font-medium hover:bg-[#B19276] transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+                  className="flex-1 bg-black text-white py-3 rounded-xl font-medium hover:bg-[#B19276] transition-colors flex justify-center items-center gap-2"
                 >
-                  {loading && <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-                  {loading ? "در حال ذخیره..." : (editingId ? "بروزرسانی" : "ساخت دسته‌بندی")}
+                  {editingId ? "بروزرسانی" : "ساخت دسته‌بندی"}
                 </button>
               </div>
 
