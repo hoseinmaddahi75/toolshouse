@@ -18,8 +18,8 @@ export default function LoginForm() {
 
   // تنظیمات (این‌ها را بهتر است از env بخوانید)
   const BACKEND_URL = MEDUSA_BACKEND_URL;
-  const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "pk_82b953b964ad71f051bb02d1382200901c260d0e8628f845fd00856125b14336";
-
+  const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
+  
   // مرحله ۱: ارسال درخواست کد تایید
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();

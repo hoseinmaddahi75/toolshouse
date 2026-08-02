@@ -16,9 +16,7 @@ export async function getReviews(): Promise<Review[]> {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        // 👇 کلید اصلاح شده (جدید)
-        "x-publishable-api-key": "pk_82b953b964ad71f051bb02d1382200901c260d0e8628f845fd00856125b14336",
-      },
+        "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",      },
       next: { revalidate: 0 }, 
     });
 

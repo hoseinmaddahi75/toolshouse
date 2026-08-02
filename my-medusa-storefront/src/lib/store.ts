@@ -4,7 +4,7 @@ import { medusaClient } from "./medusa-client";
 import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 // ✅ کلید عمومی مدوسا را مستقیم اینجا هاردکد می‌کنیم تا در بیلد داکر گم نشود
-const MEDUSA_PUBLISHABLE_KEY = "pk_82b953b964ad71f051bb02d1382200901c260d0e8628f845fd00856125b14336";
+const PUBLISHABLE_API_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
 
 interface CartState {
   cartId: string | null;
@@ -113,7 +113,7 @@ export const useCartStore = create<CartState>()(
             method: "DELETE",
             headers: {
               "Content-Type": "application/json",
-              "x-publishable-api-key": MEDUSA_PUBLISHABLE_KEY, // 👈 کلید صحیح اینجا ارسال می‌شود
+              "x-publishable-api-key": PUBLISHABLE_API_KEY,
             },
           });
 

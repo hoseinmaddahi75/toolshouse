@@ -44,6 +44,9 @@ jobs:
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:latest,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=pk_365b4257ed94ddf6811fbba11b3a26303bd6a945a0040614f4da5e1b10ca37d6
+            NEXT_PUBLIC_MEDUSA_BACKEND_URL=https://api.toolshouse.ir
 
       - name: Build and push Backend Docker image
         uses: docker/build-push-action@v5

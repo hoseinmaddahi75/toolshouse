@@ -4,7 +4,8 @@ import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 // اکسپورت کردن URL
 export const BACKEND_URL = MEDUSA_BACKEND_URL;
 
-const PUBLISHABLE_API_KEY = "pk_82b953b964ad71f051bb02d1382200901c260d0e8628f845fd00856125b14336";
+const PUBLISHABLE_API_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
+
 
 export const medusaClient = new Medusa({
   baseUrl: BACKEND_URL,

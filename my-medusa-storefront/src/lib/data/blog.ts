@@ -16,10 +16,10 @@ export interface BlogPost {
 const BACKEND_URL = MEDUSA_BACKEND_URL;
 
 // 👇 کلید جدید و سالم را اینجا مستقیم قرار دادیم
-const PUBLISHABLE_KEY = "pk_82b953b964ad71f051bb02d1382200901c260d0e8628f845fd00856125b14336";
+const PUBLISHABLE_API_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
 const headers = {
   "Content-Type": "application/json",
-  "x-publishable-api-key": PUBLISHABLE_KEY,
+  "x-publishable-api-key": PUBLISHABLE_API_KEY,
 };
 
 // --- دریافت لیست مقالات ---
