@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
 export const metadata = {
-  title: "ورود | فروشگاه توس هوس",
+  title: "ورود | فروشگاه خانه ابزار",
   description: "وارد حساب کاربری خود شوید.",
 };
 

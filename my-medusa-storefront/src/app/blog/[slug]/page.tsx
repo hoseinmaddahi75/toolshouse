@@ -32,7 +32,7 @@ export async function generateMetadata(props: Props) {
   const post = await getPostBySlug(params.slug);
   if (!post) return { title: "مطلب یافت نشد" };
   return {
-    title: `${post.title} | مجله رگال`,
+    title: `${post.title} | مجله خانه ابزار`,
     description: post.excerpt,
   };
 }
@@ -86,7 +86,7 @@ export default async function BlogPostPage(props: Props) {
               <div className="flex flex-wrap items-center gap-4 md:gap-6 text-xs md:text-sm text-gray-500 mb-8 border-b border-gray-100 pb-6">
                 <div className="flex items-center gap-2">
                   <UserIcon className="w-4 h-4" />
-                  <span>توسط: ادمین رگال</span>
+                  <span>توسط: خانه ابزار</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CalendarIcon className="w-4 h-4" />

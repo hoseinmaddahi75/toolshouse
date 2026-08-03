@@ -1,0 +1,6 @@
+
+# Backups & Uploads
+uploads_backup/
+static_backup/
+*.tar.gz
+*.sql
