@@ -47,6 +47,7 @@ jobs:
           build-args: |
             NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=pk_82b953b964ad71f051bb02d1382200901c260d0e8628f845fd00856125b14336
             NEXT_PUBLIC_MEDUSA_BACKEND_URL=https://api.toolshouse.ir
+            NEXT_PUBLIC_BASE_URL=https://toolshouse.ir
 
       - name: Build and push Backend Docker image
         uses: docker/build-push-action@v5
