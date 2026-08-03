@@ -4,7 +4,7 @@ import { completeCartWorkflow } from "@medusajs/medusa/core-flows";
 
 export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
   const { Status, Authority } = req.query;
-  const FRONTEND_URL = process.env.STORE_URL || "http://localhost:3000";
+  const FRONTEND_URL = process.env.FRONTEND_URL || "https://toolshouse.ir";
   const query = req.scope.resolve(ContainerRegistrationKeys.QUERY);
 
   if (Status !== "OK" || !Authority) {

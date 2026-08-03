@@ -12,11 +12,11 @@ export const GET = async (req: MedusaRequest, res: MedusaResponse) => {
         <p>شناسه پرداخت: <code>${authority}</code></p>
         <hr style="margin: 20px 0; border: 0; border-top: 1px solid #eee;">
         <div style="display: flex; gap: 10px; justify-content: center;">
-          <a href="http://localhost:9000/zarinpal/verify?Status=OK&Authority=${authority}" 
+          <a href="/zarinpal/verify?Status=OK&Authority=${authority}" 
              style="background: #16a34a; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold;">
              ✅ پرداخت موفقیت‌آمیز
           </a>
-          <a href="http://localhost:9000/zarinpal/verify?Status=NOK&Authority=${authority}" 
+          <a href="/zarinpal/verify?Status=NOK&Authority=${authority}" 
              style="background: #dc2626; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold;">
              ❌ انصراف از پرداخت
           </a>
