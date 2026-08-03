@@ -23,6 +23,7 @@ const backendUrl = MEDUSA_BACKEND_URL;
           items: items, 
           no_notification: false 
       }),
+      credentials: "include",
     });
 
     if (!fulfillRes.ok) {
@@ -34,7 +35,7 @@ const backendUrl = MEDUSA_BACKEND_URL;
     const fulfillData = await fulfillRes.json();
     
     // 👇👇👇 اصلاح حیاتی: استخراج هوشمند ID 👇👇👇
-    // اینجا جایی است که قبلاً کرش می‌کرد. الان همه حالات را چک می‌کنیم:
+    // اینجا جایی است که قبلاً کرش میکرد. الان همه حالات را چک میکنیم:
     let fulfillmentId = null;
 
     if (fulfillData.fulfillment && fulfillData.fulfillment.id) {
@@ -46,10 +47,10 @@ const backendUrl = MEDUSA_BACKEND_URL;
     }
 
     // اگر باز هم پیدا نشد، یعنی عملیات موفق بوده ولی آیدی را نتوانستیم بخوانیم
-    // پس خطا نمی‌دهیم، فقط وارنینگ می‌دهیم تا فرانت‌اند کرش نکند
+    // پس خطا نمیدهیم، فقط وارنینگ میدهیم تا فرانتاند کرش نکند
     if (!fulfillmentId) {
         console.warn("⚠️ Fulfillment created via Backend, but Proxy couldn't parse ID. Data:", fulfillData);
-        // یک آیدی موقت می‌گذاریم که برنامه ادامه دهد (چون رفرش صفحه همه چیز را درست می‌کند)
+        // یک آیدی موقت میگذاریم که برنامه ادامه دهد (چون رفرش صفحه همه چیز را درست میکند)
         fulfillmentId = "temp_id_reloading_needed"; 
     } else {
         console.log(`✅ Fulfillment Created! ID: ${fulfillmentId}`);
@@ -68,6 +69,7 @@ const backendUrl = MEDUSA_BACKEND_URL;
                 tracking_numbers: [trackingNumber],
                 no_notification: false 
             }),
+            credentials: "include",
         });
 
         if (!shipRes.ok) {

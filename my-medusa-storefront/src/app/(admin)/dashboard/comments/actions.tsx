@@ -24,6 +24,7 @@ export async function getComments() {
     const res = await fetch(`${BASE_URL}/admin/comments`, {
       headers: headers,
       cache: "no-store",
+      credentials: "include",
     });
 
     if (!res.ok) return [];
@@ -44,6 +45,7 @@ export async function approveCommentAction(id: string) {
       method: "PUT",
       headers: headers,
       body: JSON.stringify({ status: "approved" }),
+      credentials: "include",
     });
 
     if (!res.ok) return { success: false, error: "خطا در تایید نظر" };
@@ -62,6 +64,7 @@ export async function deleteCommentAction(id: string) {
     const res = await fetch(`${BASE_URL}/admin/comments/${id}`, {
       method: "DELETE",
       headers: headers,
+      credentials: "include",
     });
 
     if (!res.ok) return { success: false, error: "خطا در حذف نظر" };

@@ -13,7 +13,7 @@ async function getAuthToken() {
   return cookieStore.get("_medusa_admin_token")?.value || "";
 }
 
-// --- دریافت دسته‌بندی‌ها ---
+// --- دریافت دستهبندیها ---
 export async function getBlogCategories() {
   const token = await getAuthToken();
   try {
@@ -23,6 +23,7 @@ export async function getBlogCategories() {
         "Authorization": `Bearer ${token}` // ✅ اصلاح امنیتی
       },
       cache: "no-store",
+      credentials: "include",
     });
     
     if (!res.ok) return [];
@@ -38,15 +39,16 @@ export async function getBlogCategories() {
 // --- دریافت یک پست تکی ---
 export async function getPost(id: string) {
     const token = await getAuthToken();
-    
+   
     try {
-      // ✅ بهینه‌سازی: درخواست مستقیم برای پست خاص
+      // ✅ بهینهسازی: درخواست مستقیم برای پست خاص
       const res = await fetch(`${BASE_URL}/admin/blog/${id}`, {
         headers: { 
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}` 
         },
         cache: "no-store",
+        credentials: "include",
       });
       
       if(res.ok) {
@@ -73,9 +75,10 @@ async function uploadImageToMedusa(file: File, token: string) {
             headers: { 
                 "Authorization": `Bearer ${token}` 
                 // ❌ نکته مهم: Content-Type را اینجا ست نکنید! 
-                // خودِ fetch وقتی FormData می‌بیند، boundary را تنظیم می‌کند.
+                // خودِ fetch وقتی FormData میبیند، boundary را تنظیم میکند.
             },
             body: formData,
+            credentials: "include",
         });
 
         if (res.ok) {
@@ -122,7 +125,7 @@ export async function savePostAction(formData: FormData, isEditMode: boolean = f
         }
     }
 
-    // 2. آماده‌سازی داده‌ها
+    // 2. آمادهسازی دادهها
     const rawData = {
         title: formData.get("title"),
         slug: formData.get("slug"),
@@ -137,19 +140,20 @@ export async function savePostAction(formData: FormData, isEditMode: boolean = f
 
     // 3. تعیین آدرس و متد
     let url = `${BASE_URL}/admin/blog`;
-    // معمولا برای آپدیت هم POST کار می‌کند اما اگر ساختار REST دارید شاید PUT باشد
-    // فعلا روی POST نگه می‌داریم چون با اکسپرس معمول‌تر است
+    // معمولا برای آپدیت هم POST کار میکند اما اگر ساختار REST دارید شاید PUT باشد
+    // فعلا روی POST نگه میداریم چون با اکسپرس معمولتر است
     if (isEditMode && editId) {
         url = `${BASE_URL}/admin/blog/${editId}`;
     }
 
     const res = await fetch(url, {
-      method: "POST", // یا PUT بسته به بک‌اند شما
+      method: "POST", // یا PUT بسته به بکاند شما
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`, // ✅ اصلاح امنیتی
       },
       body: JSON.stringify(rawData),
+      credentials: "include",
     });
 
     if (!res.ok) {
@@ -164,22 +168,23 @@ export async function savePostAction(formData: FormData, isEditMode: boolean = f
   } catch (error: any) {
     return { success: false, error: error.message };
   }
-
+  
   redirect("/dashboard/blog");
 }
 
 // --- حذف پست ---
 export async function deletePostAction(id: string) {
     const token = await getAuthToken();
-  
+   
     try {
       const res = await fetch(`${BASE_URL}/admin/blog/${id}`, {
         method: "DELETE",
         headers: { 
             "Authorization": `Bearer ${token}` // ✅ اصلاح امنیتی
         },
+        credentials: "include",
       });
-  
+   
       if (res.ok) {
         revalidatePath("/dashboard/blog");
         return { success: true };

@@ -24,6 +24,7 @@ export async function adminFetch(endpoint: string) {
         "Authorization": `Bearer ${token}`,
       },
       cache: "no-store",
+      credentials: "include",
     });
 
     if (res.status === 401) {

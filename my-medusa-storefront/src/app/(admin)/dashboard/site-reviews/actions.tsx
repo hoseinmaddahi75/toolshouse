@@ -24,6 +24,7 @@ export async function getSiteReviews() {
     const res = await fetch(`${BASE_URL}/admin/reviews`, {
       headers: { ...headers, "Content-Type": "application/json" },
       cache: "no-store",
+      credentials: "include",
     });
 
     if (!res.ok) return [];
@@ -44,6 +45,7 @@ export async function uploadReviewImage(formData: FormData) {
       method: "POST",
       headers: headers, // ❌ بدون Content-Type دستی
       body: formData,
+      credentials: "include",
     });
 
     if (res.ok) {
@@ -66,6 +68,7 @@ export async function saveSiteReviewAction(data: any, id?: string) {
       method: "POST", // طبق API شما هر دو POST هستند
       headers: { ...headers, "Content-Type": "application/json" },
       body: JSON.stringify(data),
+      credentials: "include",
     });
 
     if (!res.ok) return { success: false, error: "خطا در ذخیره سازی" };
@@ -84,6 +87,7 @@ export async function deleteSiteReviewAction(id: string) {
     const res = await fetch(`${BASE_URL}/admin/reviews/${id}`, {
       method: "DELETE",
       headers: { ...headers, "Content-Type": "application/json" },
+      credentials: "include",
     });
 
     if (!res.ok) return { success: false, error: "خطا در حذف" };

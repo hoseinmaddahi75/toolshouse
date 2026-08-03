@@ -25,6 +25,7 @@ export async function getProductReviews() {
     const res = await fetch(`${BASE_URL}/admin/product-reviews`, {
       headers: headers,
       cache: "no-store",
+      credentials: "include",
     });
 
     if (!res.ok) return [];
@@ -33,7 +34,7 @@ export async function getProductReviews() {
     let reviews = data.reviews || [];
 
     // 2. 🚀 واکشی نام محصولات (Batch Fetching)
-    // استخراج تمام آیدی‌های محصولات (بدون تکرار)
+    // استخراج تمام آیدیهای محصولات (بدون تکرار)
     const productIds = Array.from(new Set(reviews.map((r: any) => r.product_id).filter(Boolean)));
 
     if (productIds.length > 0) {
@@ -42,11 +43,12 @@ export async function getProductReviews() {
             // مثال: ?id[]=prod_1&id[]=prod_2&fields=id,title,thumbnail
             const queryParams = new URLSearchParams();
             productIds.forEach((id: any) => queryParams.append("id[]", id));
-            queryParams.append("fields", "id,title,thumbnail"); // فقط فیلدهای لازم را می‌گیریم
+            queryParams.append("fields", "id,title,thumbnail"); // فقط فیلدهای لازم را میگیریم
 
             const prodRes = await fetch(`${BASE_URL}/admin/products?${queryParams.toString()}`, {
                 headers: headers,
-                cache: "no-store"
+                cache: "no-store",
+                credentials: "include",
             });
 
             if (prodRes.ok) {
@@ -83,6 +85,7 @@ export async function updateReviewStatusAction(id: string, status: "approved" | 
       method: "PUT",
       headers: headers,
       body: JSON.stringify({ id, status }),
+      credentials: "include",
     });
 
     if (!res.ok) return { success: false, error: "خطا در تغییر وضعیت" };
@@ -102,6 +105,7 @@ export async function deleteReviewAction(id: string) {
       method: "DELETE",
       headers: headers,
       body: JSON.stringify({ id }),
+      credentials: "include",
     });
 
     if (!res.ok) return { success: false, error: "خطا در حذف نظر" };

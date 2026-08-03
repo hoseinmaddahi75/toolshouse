@@ -45,6 +45,7 @@ const backendUrl = MEDUSA_BACKEND_URL;
         "Authorization": `Bearer ${token}`,
       },
       cache: "no-store",
+      credentials: "include",
     });
 
     if (!res.ok) {

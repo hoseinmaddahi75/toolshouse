@@ -23,6 +23,7 @@ export async function getCategories() {
     const res = await fetch(`${BASE_URL}/admin/blog-categories`, {
       headers: headers,
       cache: "no-store",
+      credentials: "include",
     });
     
     if (!res.ok) return [];
@@ -49,6 +50,7 @@ export async function createCategory(formData: FormData) {
       method: "POST",
       headers: headers,
       body: JSON.stringify(rawData),
+      credentials: "include",
     });
 
     if (!res.ok) {
@@ -67,24 +69,25 @@ export async function createCategory(formData: FormData) {
 // --- ویرایش ---
 export async function updateCategory(id: string, formData: FormData) {
     const headers = await getAuthHeaders();
-  
+   
     const rawData = {
       title: formData.get("title"),
       value: formData.get("value"),
     };
-  
+   
     try {
       const res = await fetch(`${BASE_URL}/admin/blog-categories/${id}`, {
-        method: "POST", // معمولا POST است، اگر بک‌اند PUT می‌خواهد تغییر دهید
+        method: "POST", // معمولا POST است، اگر بکاند PUT میخواهد تغییر دهید
         headers: headers,
         body: JSON.stringify(rawData),
+        credentials: "include",
       });
   
       if (!res.ok) {
           const txt = await res.text();
           return { success: false, error: txt };
       }
-  
+
       revalidatePath("/dashboard/blog/categories");
       revalidatePath("/dashboard/blog/create");
       return { success: true };
@@ -99,11 +102,12 @@ export async function deleteCategory(id: string) {
 
   try {
     // برای متد DELETE معمولا Content-Type لازم نیست، اما Authorization لازم است
-    // پس هدرها را دستی می‌سازیم یا Content-Type را از getAuthHeaders حذف می‌کنیم
-    // اینجا از همان استفاده می‌کنیم چون ضرری ندارد
+    // پس هدرها را دستی میسازیم یا Content-Type را از getAuthHeaders حذف میکنیم
+    // اینجا از همان استفاده میکنیم چون ضرری ندارد
     const res = await fetch(`${BASE_URL}/admin/blog-categories/${id}`, {
       method: "DELETE",
       headers: headers,
+      credentials: "include",
     });
 
     if (!res.ok) return { success: false, error: "خطا در حذف" };

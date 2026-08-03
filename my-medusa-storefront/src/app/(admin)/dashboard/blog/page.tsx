@@ -36,6 +36,7 @@ export default async function AdminBlogPage() {
         "Authorization": `Bearer ${token}`, // 👈 اصلاح اصلی: استفاده از توکن به جای کوکی خام
       },
       cache: "no-store",
+      credentials: "include",
     });
 
     if (res.ok) {

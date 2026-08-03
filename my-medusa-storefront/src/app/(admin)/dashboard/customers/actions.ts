@@ -30,6 +30,7 @@ export async function getCustomersAction() {
         "Content-Type": "application/json",
       },
       cache: "no-store",
+      credentials: "include",
     });
 
     if (res.status === 401) return { success: false, error: "نشست کاربری منقضی شده است (401)" };
@@ -50,15 +51,17 @@ export async function getCustomerDetailsAction(id: string) {
   if (!API_TOKEN || !id) return null;
 
   try {
-    // دریافت موازی اطلاعات و سفارش‌ها (مثل قبل)
+    // دریافت موازی اطلاعات و سفارشها (مثل قبل)
     const [customerRes, ordersRes] = await Promise.all([
       fetch(`${BASE_URL}/admin/customers/${id}?fields=*addresses`, {
         headers: { "Authorization": `Bearer ${API_TOKEN}`, "Content-Type": "application/json" },
         cache: "no-store",
+        credentials: "include",
       }),
       fetch(`${BASE_URL}/admin/orders?customer_id=${id}&fields=id,display_id,total,currency_code,created_at,payment_status`, {
         headers: { "Authorization": `Bearer ${API_TOKEN}`, "Content-Type": "application/json" },
         cache: "no-store",
+        credentials: "include",
       })
     ]);
 

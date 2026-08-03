@@ -74,7 +74,7 @@ export default function CreateProductForm({ token }: { token: string }) {
         setFetchingDefaults(true);
         const safeFetch = async (url: string) => {
           try {
-            const res = await fetch(url, { headers: authHeaders });
+            const res = await fetch(url, { headers: authHeaders, credentials: "include" });
             return res.ok ? res : null;
           } catch { return null; }
         };
@@ -164,6 +164,7 @@ export default function CreateProductForm({ token }: { token: string }) {
       try {
         const res = await fetch(`${BASE_URL}/admin/uploads`, {
           method: "POST", body: formData, headers: { "Authorization": `Bearer ${token}` },
+          credentials: "include"
         });
         if (!res.ok) throw new Error("خطا در آپلود");
         const data = await res.json();
@@ -228,6 +229,7 @@ export default function CreateProductForm({ token }: { token: string }) {
       const createRes = await fetch(`${BASE_URL}/admin/products`, {
         method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify(payload),
+        credentials: "include"
       });
 
       if (!createRes.ok) {
@@ -240,7 +242,7 @@ export default function CreateProductForm({ token }: { token: string }) {
 
       await new Promise(r => setTimeout(r, 1000));
       
-      const freshDetails = await fetch(`${BASE_URL}/admin/products/${productId}/details`, { headers: authHeaders });
+      const freshDetails = await fetch(`${BASE_URL}/admin/products/${productId}/details`, { headers: authHeaders, credentials: "include" });
       if (!freshDetails.ok) {
           toast.success("محصول ساخته شد ولی به‌روزرسانی موجودی انجام نشد.");
           router.push(`/dashboard/products/${productId}/edit`);
@@ -263,9 +265,10 @@ export default function CreateProductForm({ token }: { token: string }) {
 
               if (targetStock >= 0) {
                   await fetch(`${BASE_URL}/admin/inventory-items/${invItemId}/location-levels`, {
-                      method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
-                      body: JSON.stringify({ location_id: stockLocationId, stocked_quantity: targetStock }),
-                  });
+                        method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
+                        body: JSON.stringify({ location_id: stockLocationId, stocked_quantity: targetStock }),
+                        credentials: "include"
+                    });
               }
           });
           await Promise.all(updatePromises);

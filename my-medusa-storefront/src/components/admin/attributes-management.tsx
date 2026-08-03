@@ -37,8 +37,9 @@ export default function AttributesManagement({ token }: { token: string }) {
     try {
       setLoading(true);
       // 👇 استفاده از هدر Auth
-      const res = await fetch(`${BASE_URL}/admin/global-attributes`, { 
-          headers: authHeaders 
+      const res = await fetch(`${BASE_URL}/admin/global-attributes`, {
+          headers: authHeaders,
+          credentials: "include"
       });
       
       if (res.status === 401) {
@@ -95,8 +96,9 @@ export default function AttributesManagement({ token }: { token: string }) {
     if (!confirm("آیا از حذف این ویژگی اطمینان دارید؟")) return;
     try {
       const res = await fetch(`${BASE_URL}/admin/global-attributes/${id}`, {
-        method: "DELETE", 
-        headers: authHeaders // 👈 Auth Header
+        method: "DELETE",
+        headers: authHeaders,
+        credentials: "include"
       });
       const data = await res.json(); 
 
@@ -124,7 +126,8 @@ export default function AttributesManagement({ token }: { token: string }) {
 
       const res = await fetch(url, {
         method: "POST",
-        headers: authHeaders, // 👈 Auth Header
+        headers: authHeaders,
+        credentials: "include",
         body: JSON.stringify(payload),
       });
 

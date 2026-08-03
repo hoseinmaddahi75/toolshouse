@@ -28,6 +28,7 @@ const backendUrl = MEDUSA_BACKEND_URL;
         "Authorization": `Bearer ${token}`, // 🔑 کلید طلایی
       },
       cache: "no-store",
+      credentials: "include",
     });
 
     if (!res.ok) {

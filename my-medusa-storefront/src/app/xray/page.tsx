@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
-// این یک Server Component است و مستقیماً روی سرور اجرا می‌شود
+// این یک Server Component است و مستقیماً روی سرور اجرا میشود
 // بنابراین هیچ مشکل CORS یا دسترسی نخواهیم داشت.
 export default async function XrayPage({ searchParams }: { searchParams: Promise<{ id: string }> }) {
   const { id } = await searchParams; // دریافت آیدی سفارش از آدرس
@@ -19,28 +19,28 @@ export default async function XrayPage({ searchParams }: { searchParams: Promise
 
   // 1. تست استاندارد (سفارش معمولی)
   try {
-    const res = await fetch(`${backendUrl}/admin/orders/${id}?fields=+fulfillments`, { headers });
+    const res = await fetch(`${backendUrl}/admin/orders/${id}?fields=+fulfillments`, { headers, credentials: "include" });
     const json = await res.json();
     reports["1_ORDER_BASIC"] = json.order?.fulfillments?.[0] || "No Data";
   } catch (e: any) { reports["1_ERROR"] = e.message; }
 
-  // 2. تست لیبل‌ها (با کوئری V2)
+  // 2. تست لیبلها (با کوئری V2)
   try {
-    const res = await fetch(`${backendUrl}/admin/orders/${id}?fields=+fulfillments.labels`, { headers });
+    const res = await fetch(`${backendUrl}/admin/orders/${id}?fields=+fulfillments.labels`, { headers, credentials: "include" });
     const json = await res.json();
     reports["2_ORDER_WITH_LABELS"] = json.order?.fulfillments?.[0]?.labels || "No Labels Found";
   } catch (e: any) { reports["2_ERROR"] = e.message; }
 
   // 3. تست ترکینگ نامبر (روش قدیمی)
   try {
-    const res = await fetch(`${backendUrl}/admin/orders/${id}?fields=+fulfillments.tracking_numbers`, { headers });
+    const res = await fetch(`${backendUrl}/admin/orders/${id}?fields=+fulfillments.tracking_numbers`, { headers, credentials: "include" });
     const json = await res.json();
     reports["3_ORDER_WITH_TRACKING_NUMBERS"] = json.order?.fulfillments?.[0]?.tracking_numbers || "No Tracking Nums";
   } catch (e: any) { reports["3_ERROR"] = e.message; }
 
   // 4. تست شیپمنت (روش جدید) - اگر ارور داد یعنی این فیلد وجود ندارد
   try {
-    const res = await fetch(`${backendUrl}/admin/orders/${id}?fields=+fulfillments.shipment`, { headers });
+    const res = await fetch(`${backendUrl}/admin/orders/${id}?fields=+fulfillments.shipment`, { headers, credentials: "include" });
     const json = await res.json();
     reports["4_ORDER_WITH_SHIPMENT"] = json.order?.fulfillments?.[0]?.shipment || "No Shipment Data";
   } catch (e: any) { reports["4_ERROR"] = e.message; }

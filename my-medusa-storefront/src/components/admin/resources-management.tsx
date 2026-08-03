@@ -35,8 +35,8 @@ export default function ResourcesManagement({ token }: { token: string }) {
     try {
       // 👇 استفاده از هدر Auth
       const [specsRes, sizesRes] = await Promise.all([
-        fetch(`${BASE_URL}/admin/product-resources?type=specs`, { headers: authHeaders }),
-        fetch(`${BASE_URL}/admin/product-resources?type=sizes`, { headers: authHeaders })
+        fetch(`${BASE_URL}/admin/product-resources?type=specs`, { headers: authHeaders, credentials: "include" }),
+        fetch(`${BASE_URL}/admin/product-resources?type=sizes`, { headers: authHeaders, credentials: "include" })
       ]);
       
       if (specsRes.status === 401 || sizesRes.status === 401) {
@@ -90,10 +90,11 @@ export default function ResourcesManagement({ token }: { token: string }) {
     setIsUploading(true);
     try {
         // 👇 آپلود با هدر Auth
-        const res = await fetch(`${BASE_URL}/admin/uploads`, { 
-            method: "POST", 
+        const res = await fetch(`${BASE_URL}/admin/uploads`, {
+            method: "POST",
             body: formData,
-            headers: authHeaders 
+            headers: authHeaders,
+            credentials: "include"
         });
 
         if (!res.ok) throw new Error("Upload failed");
@@ -144,6 +145,7 @@ export default function ResourcesManagement({ token }: { token: string }) {
         method,
         headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify(body),
+        credentials: "include"
       });
 
       if (!res.ok) {
@@ -168,6 +170,7 @@ export default function ResourcesManagement({ token }: { token: string }) {
           method: "DELETE",
           headers: { "Content-Type": "application/json", ...authHeaders },
           body: JSON.stringify({ id, type }),
+          credentials: "include"
         });
   
         if (!res.ok) throw new Error();

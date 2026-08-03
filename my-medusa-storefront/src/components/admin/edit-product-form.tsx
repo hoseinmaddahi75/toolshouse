@@ -66,7 +66,7 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
         setLoading(true);
         const safeFetch = async (url: string) => {
           try {
-            const res = await fetch(url, { headers: authHeaders });
+            const res = await fetch(url, { headers: authHeaders, credentials: "include" });
             return res.ok ? res : null;
           } catch { return null; }
         };
@@ -209,11 +209,12 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify(updatePayload),
+        credentials: "include"
       });
 
       const newVariants = variants.filter(v => v.id?.startsWith("NEW_"));
       if (newVariants.length > 0) {
-          let prodDetails = await fetch(`${BASE_URL}/admin/products/${id}/details`, { headers: authHeaders }).then(r => r.json());
+          let prodDetails = await fetch(`${BASE_URL}/admin/products/${id}/details`, { headers: authHeaders, credentials: "include" }).then(r => r.json());
           let currentOptions = prodDetails.product.options || [];
           const newOptionTitles = Object.keys(selectedAttrs);
           let optionsModified = false;
@@ -226,6 +227,7 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
                   await fetch(`${BASE_URL}/admin/products/${id}/options`, {
                       method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
                       body: JSON.stringify({ title: title, values: uniqueValues }),
+                      credentials: "include"
                   });
                   optionsModified = true;
               }
@@ -233,7 +235,7 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
 
           if (optionsModified) await new Promise(r => setTimeout(r, 2000));
 
-          prodDetails = await fetch(`${BASE_URL}/admin/products/${id}/details`, { headers: authHeaders }).then(r => r.json());
+          prodDetails = await fetch(`${BASE_URL}/admin/products/${id}/details`, { headers: authHeaders, credentials: "include" }).then(r => r.json());
           currentOptions = prodDetails.product.options || [];
 
           for (const v of newVariants) {
@@ -250,6 +252,7 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
                       title: v.title, sku: v.sku || null, prices: [{ amount: Number(v.price), currency_code: "irr" }],
                       options: medusaOptionsPayload, manage_inventory: true, allow_backorder: false, origin_country: "IR", material: null,
                   }),
+                  credentials: "include"
               });
 
               if (createRes.ok) {
@@ -265,7 +268,7 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
               v.options?.some((o: any) => o.option?.title === "Default Option" || o.value === "Default Value")
           );
           for (const v of variantsToDelete) {
-              await fetch(`${BASE_URL}/admin/products/${id}/variants/${v.id}`, { method: "DELETE", headers: authHeaders });
+              await fetch(`${BASE_URL}/admin/products/${id}/variants/${v.id}`, { method: "DELETE", headers: authHeaders, credentials: "include" });
           }
       }
 
@@ -274,6 +277,7 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
          await fetch(`${BASE_URL}/admin/products/${id}/variants/${v.id}`, {
             method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
             body: JSON.stringify({ sku: v.sku || null, prices: [{ amount: Number(v.price), currency_code: "irr" }], origin_country: "IR" }),
+            credentials: "include"
          });
          if (v.inventory_item_id && stockLocationId) {
              await updateInventoryWithRetry(v.inventory_item_id, Number(v.inventory), stockLocationId);
@@ -293,13 +297,15 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
               const res = await fetch(`${BASE_URL}/admin/inventory-items/${inventoryItemId}/location-levels/${locationId}`, {
                   method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
                   body: JSON.stringify({ stocked_quantity: quantity }),
+                  credentials: "include"
               });
               if (res.status === 404) {
                   await fetch(`${BASE_URL}/admin/inventory-items/${inventoryItemId}/location-levels`, {
                       method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
                       body: JSON.stringify({ location_id: locationId, stocked_quantity: quantity }),
+                      credentials: "include"
                   });
-              } 
+              }
               if (res.ok || res.status === 404) return;
               await new Promise(r => setTimeout(r, 1000));
           } catch (e) { console.error(e); }

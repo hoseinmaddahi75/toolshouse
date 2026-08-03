@@ -21,9 +21,9 @@ async function getDashboardStats() {
   try {
     // دریافت آمار به صورت موازی
     const [ordersRes, productsRes, customersRes] = await Promise.all([
-      fetch(`${BASE_URL}/admin/orders?limit=1`, { headers, cache: 'no-store' }),
-      fetch(`${BASE_URL}/admin/products?limit=1&status=published`, { headers, cache: 'no-store' }),
-      fetch(`${BASE_URL}/admin/customers?limit=1`, { headers, cache: 'no-store' })
+      fetch(`${BASE_URL}/admin/orders?limit=1`, { headers, cache: 'no-store', credentials: 'include' }),
+      fetch(`${BASE_URL}/admin/products?limit=1&status=published`, { headers, cache: 'no-store', credentials: 'include' }),
+      fetch(`${BASE_URL}/admin/customers?limit=1`, { headers, cache: 'no-store', credentials: 'include' })
     ]);
 
     // اگر توکن نامعتبر بود

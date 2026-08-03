@@ -17,7 +17,8 @@ async function getOrderData(id: string) {
 
   const res = await fetch(`${BASE_URL}/admin/orders/${id}?${query.toString()}`, {
     headers: { "Authorization": `Bearer ${token}` },
-    cache: "no-store"
+    cache: "no-store",
+    credentials: "include"
   });
 
   if (!res.ok) return null;

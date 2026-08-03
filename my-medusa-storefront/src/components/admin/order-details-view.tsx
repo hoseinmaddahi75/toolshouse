@@ -54,9 +54,10 @@ export default function OrderDetailsView({ id, token }: { id: string, token: str
         ].join(",")
       });
 
-      const orderRes = await fetch(`${BASE_URL}/admin/orders/${id}?${queryParams.toString()}`, { 
+      const orderRes = await fetch(`${BASE_URL}/admin/orders/${id}?${queryParams.toString()}`, {
         headers: authHeaders,
-        cache: "no-store"
+        cache: "no-store",
+        credentials: "include"
       });
 
       if (!orderRes.ok) {
@@ -107,10 +108,11 @@ export default function OrderDetailsView({ id, token }: { id: string, token: str
       const res = await fetch(`${BASE_URL}/admin/orders/${order.id}/fulfillments`, {
         method: "POST",
         headers: authHeaders,
-        body: JSON.stringify({ 
+        body: JSON.stringify({
             items: itemsToFulfill,
-            no_notification: false 
+            no_notification: false
         }),
+        credentials: "include"
       });
 
       if (!res.ok) {
