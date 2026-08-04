@@ -245,3 +245,101 @@ export async function setPaymentSessionAction(cartId: string, providerId: string
     return { success: false };
   }
 }
+
+
+// ۷. اعمال کد تخفیف به سبد خرید (روش استاندارد Medusa v2)
+export async function applyPromotionAction(cartId: string, code: string) {
+  try {
+    const headers = await getHeadersWithAuth();
+    
+    // 💡 در مدوسا v2، پروموشن‌ها مستقیماً با آپدیت کردن خود سبد خرید اعمال می‌شوند
+    const res = await fetch(`${BACKEND_URL}/store/carts/${cartId}/promotions`, {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify({ 
+        promo_codes: [code] 
+      }),
+      cache: "no-store",
+    });
+
+    const data = await res.json();
+    
+    console.log("🎟️ MEDUSA CART UPDATE WITH PROMO:", JSON.stringify(data, null, 2));
+
+    if (!res.ok) {
+      throw new Error(data.message || "کد تخفیف نامعتبر یا منقضی شده است.");
+    }
+    
+    return { success: true, cart: data.cart };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+}
+
+// ۸. حذف کد تخفیف از سبد خرید
+export async function removePromotionAction(cartId: string, code: string) {
+  try {
+    const headers = await getHeadersWithAuth();
+    
+    // برای حذف هم از همان ساختار آپدیت سبد خرید استفاده می‌کنیم (ارسال آرایه خالی یا کدهای باقیمانده)
+    // یا روش استاندارد حذف پروموشن در مدوسا v2
+    const res = await fetch(`${BACKEND_URL}/store/carts/${cartId}/promotions`, {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify({ 
+        promo_codes: [] // پاک کردن کدهای تخفیف
+      }),
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      throw new Error("خطا در حذف کد تخفیف");
+    }
+    
+    const data = await res.json();
+    return { success: true, cart: data.cart };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+}
+
+
+// 🐞 تابع دیباگر عمیق برای کشف دلیل اعمال نشدن تخفیف
+export async function runDeepDiagnostic(cartId: string, promoCode: string) {
+  try {
+    console.log(`\n\n======================================================`);
+    console.log(`🔍 STARTING DEEP DIAGNOSTIC FOR PROMO: ${promoCode}`);
+    console.log(`======================================================`);
+
+    // برای دیباگ، یک توکن ادمین نیاز داریم (اگر توی کوکی هست که عالیه، اگر نه باید توکن ادمین رو داشته باشیم)
+    // اما برای اینکه وابسته به لاگین ادمین نباشیم، از API استور با کلید پابلیش استفاده میکنیم
+    const headers = await getHeadersWithAuth();
+
+    // 1. اول تلاش میکنیم تخفیف رو مستقیما به سبد بزنیم و خروجی خام بک‌اند رو ببینیم
+    const applyRes = await fetch(`${BACKEND_URL}/store/carts/${cartId}/promotions`, {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify({ promo_codes: [promoCode] }),
+      cache: "no-store",
+    });
+    
+    const applyData = await applyRes.json();
+    console.log(`\n🛒 1. RAW APPLY RESPONSE:`, JSON.stringify(applyData, null, 2));
+
+    // 2. حالا کل دیتای سبد خرید رو با تمام روابط (Relations) از بک‌اند می‌گیریم
+    const cartRes = await fetch(`${BACKEND_URL}/store/carts/${cartId}?fields=*promotions,*items,*region`, {
+      method: "GET",
+      headers: headers,
+      cache: "no-store",
+    });
+    const cartData = await cartRes.json();
+    console.log(`\n📦 2. CART RELATIONS (PROMOTIONS):`, JSON.stringify(cartData.cart?.promotions, null, 2));
+    console.log(`📦 3. CART ITEMS:`, JSON.stringify(cartData.cart?.items, null, 2));
+
+    console.log(`======================================================\n\n`);
+    
+    return { success: true };
+  } catch (e: any) {
+    console.error("DIAGNOSTIC ERROR:", e.message);
+  }
+}

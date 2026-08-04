@@ -8,26 +8,33 @@ import {
   retrieveShippingOptions, 
   getCurrentCustomerAction,
   setShippingMethodAction, 
-  ensureCartOwnership
+  ensureCartOwnership,
+  applyPromotionAction, // اضافه شد
+  removePromotionAction, // اضافه شد
+  runDeepDiagnostic
 } from "./actions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Loader2, CheckCircle, MapPin, CreditCard, Truck, Home, Plus, AlertCircle } from "lucide-react";
+import { 
+  Loader2, CheckCircle, MapPin, CreditCard, 
+  Truck, Home, Plus, AlertCircle, TicketPercent, X 
+} from "lucide-react";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
-// تنظیمات صفحه
 export const dynamic = "force-dynamic";
 
-// --- توابع کمکی ---
 async function getCartDetails(cartId: string) {
   const baseUrl = MEDUSA_BACKEND_URL;
   const apiKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
   try {
-    const res = await fetch(`${baseUrl}/store/carts/${cartId}?fields=+payment_collection.payment_sessions`, {
+    // 💡 رفع مشکل نیامدن دیتا: استفاده از * برای relations و + برای fields
+    const query = "?fields=*payment_collection.payment_sessions,*promotions,+discount_total,+subtotal,+total";
+    
+    const res = await fetch(`${baseUrl}/store/carts/${cartId}${query}`, {
       method: "GET",
       headers: { "Content-Type": "application/json", "x-publishable-api-key": apiKey },
       cache: "no-store",
@@ -37,7 +44,6 @@ async function getCartDetails(cartId: string) {
   } catch (error) { return null; }
 }
 
-// --- کامپوننت اصلی محتوا (منطق اصلی اینجاست) ---
 function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -47,30 +53,41 @@ function CheckoutContent() {
   const [initializing, setInitializing] = useState(true);
   const [step, setStep] = useState(1); 
   const [currencyCode, setCurrencyCode] = useState("irt");
-
   const [customer, setCustomer] = useState<any>(null);
   
-  // استیت‌های فرم
+  // 🟢 استیت جدید برای نگهداری دیتای کامل سبد خرید از بک‌اند
+  const [fullCart, setFullCart] = useState<any>(null);
+
+  // استیت‌های تخفیف
+  const [promoCode, setPromoCode] = useState("");
+  const [isPromoLoading, setIsPromoLoading] = useState(false);
+  const [promoError, setPromoError] = useState("");
+
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
 
   const [shippingAddress, setShippingAddress] = useState({
-    first_name: "",
-    last_name: "",
-    address_1: "",
-    city: "",
-    country_code: "ir", 
-    postal_code: "",
-    phone: "",
+    first_name: "", last_name: "", address_1: "", city: "", 
+    country_code: "ir", postal_code: "", phone: "",
   });
 
   const [shippingOptions, setShippingOptions] = useState<any[]>([]);
   const [selectedShipping, setSelectedShipping] = useState<string>("");
-  
   const [paymentSessions, setPaymentSessions] = useState<any[]>([]);
   const [selectedPaymentProvider, setSelectedPaymentProvider] = useState<string>("");
 
-  // ۱. افکت اولیه
+  const refreshCartData = async (cId: string) => {
+    const data = await getCartDetails(cId);
+    if (data?.cart) {
+      console.log("🛒 FULL CART DATA FROM MEDUSA:", data.cart); 
+      
+      setFullCart(data.cart);
+      if (data.cart.payment_collection?.payment_sessions?.length > 0) {
+        setPaymentSessions(data.cart.payment_collection.payment_sessions);
+      }
+    }
+  };
+
   useEffect(() => {
     const init = async () => {
       if (!cartId) await initializeCart();
@@ -78,35 +95,45 @@ function CheckoutContent() {
       if (!currentCartId) {
         try {
           const raw = localStorage.getItem("medusa-cart-storage");
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            currentCartId = parsed?.state?.cartId || null;
-          }
+          if (raw) currentCartId = JSON.parse(raw)?.state?.cartId || null;
         } catch {}
       }
       
-      if (currentCartId) {
-          await ensureCartOwnership(currentCartId);
-      }
+      if (currentCartId) await ensureCartOwnership(currentCartId);
 
       try {
         const authCustomer = await getCurrentCustomerAction();
         if (authCustomer) {
             setCustomer(authCustomer);
             if (authCustomer.email) setEmail(authCustomer.email);
-            
             if (authCustomer.addresses?.length > 0) {
                 handleSelectSavedAddress(authCustomer.addresses[0], false); 
             }
         }
 
         if (currentCartId) {
+            // 💡 آپدیت خاموش: یک درخواست خالی به سبد می‌فرستیم تا موتور تخفیف‌های خودکار مدوسا بیدار شود
+            try {
+              await fetch(`${MEDUSA_BACKEND_URL}/store/carts/${currentCartId}`, {
+                method: "POST",
+                headers: { 
+                  "Content-Type": "application/json", 
+                  "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "" 
+                },
+                body: JSON.stringify({}), // ارسال بادیِ خالی
+                cache: "no-store",
+              });
+            } catch(e) {
+              console.error("Silent update failed", e);
+            }
+
+            // 💡 حالا که موتور بیدار شده و تخفیف رو اعمال کرده، دیتا رو می‌گیریم
             const data = await getCartDetails(currentCartId);
+            
             if (data?.cart) {
+                setFullCart(data.cart);
                 setCurrencyCode(data.cart.region.currency_code);
-                if (data.cart.email && !authCustomer?.email) {
-                    setEmail(data.cart.email);
-                }
+                if (data.cart.email && !authCustomer?.email) setEmail(data.cart.email);
                 if (data.cart.payment_collection?.payment_sessions?.length > 0) {
                     setPaymentSessions(data.cart.payment_collection.payment_sessions);
                 }
@@ -115,10 +142,8 @@ function CheckoutContent() {
       } catch (e) { console.error(e); } finally { setInitializing(false); }
     };
     init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cartId]);
 
-  // ۲. هندل کردن بازگشت از بانک
   useEffect(() => {
     const paymentStatus = searchParams.get("payment_status");
     const orderId = searchParams.get("order_id");
@@ -130,80 +155,82 @@ function CheckoutContent() {
     }
   }, [searchParams, router]);
 
+  // هندلر اعمال تخفیف
+  const handleApplyPromo = async () => {
+    if (!promoCode.trim() || !cartId) return;
+    setIsPromoLoading(true);
+    setPromoError("");
+
+    const res = await applyPromotionAction(cartId, promoCode.trim());
+    if (res.success && res.cart) {
+      toast.success("کد تخفیف با موفقیت اعمال شد.");
+      setPromoCode("");
+      
+      // 💡 فقط دیتای درستِ بک‌اند رو تو صفحه میذاریم و دیگه الکی رفرش نمی‌کنیم که پاک بشه
+      setFullCart(res.cart); 
+      
+    } else {
+      setPromoError(res.error || "خطا در اعمال کد تخفیف");
+    }
+    setIsPromoLoading(false);
+  };
+
+  // هندلر حذف تخفیف
+  const handleRemovePromo = async (code: string) => {
+    if (!cartId) return;
+    setIsPromoLoading(true);
+    const res = await removePromotionAction(cartId, code);
+    if (res.success && res.cart) {
+      toast.success("کد تخفیف حذف شد.");
+      
+      // 💡 جایگزینی مستقیم دیتا
+      setFullCart(res.cart); 
+    } else {
+      toast.error(res.error || "خطا در حذف کد تخفیف");
+    }
+    setIsPromoLoading(false);
+  };
+
   const handleSelectSavedAddress = (addr: any, showToast = true) => {
     setShippingAddress({
-        first_name: addr.first_name || "",
-        last_name: addr.last_name || "",
-        address_1: addr.address_1 || "",
-        city: addr.city || "",
-        country_code: addr.country_code || "ir",
-        postal_code: addr.postal_code || "",
+        first_name: addr.first_name || "", last_name: addr.last_name || "",
+        address_1: addr.address_1 || "", city: addr.city || "",
+        country_code: addr.country_code || "ir", postal_code: addr.postal_code || "",
         phone: addr.phone || "",
     });
-    
-    if (!email && customer?.email) {
-        setEmail(customer.email);
-    }
-    
+    if (!email && customer?.email) setEmail(customer.email);
     setEmailError("");
     if (showToast) toast.info("آدرس انتخاب شد");
   };
 
   const handleClearAddress = () => {
       setShippingAddress({
-        first_name: "",
-        last_name: "",
-        address_1: "",
-        city: "",
-        country_code: "ir",
-        postal_code: "",
-        phone: "",
+        first_name: "", last_name: "", address_1: "", city: "",
+        country_code: "ir", postal_code: "", phone: "",
       });
   };
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       setEmail(e.target.value);
-      if (e.target.value.trim().length > 0) {
-          setEmailError(""); 
-      }
+      if (e.target.value.trim().length > 0) setEmailError(""); 
   };
 
   const handleSubmitAddress = async () => {
     if (!cartId) return;
-
-    if (!shippingAddress.first_name.trim()) {
-        toast.error("نام الزامی است");
-        return;
-    }
-    if (!shippingAddress.last_name.trim()) {
-        toast.error("نام خانوادگی الزامی است");
-        return;
-    }
-    if (!shippingAddress.address_1.trim()) {
-        toast.error("آدرس دقیق الزامی است");
-        return;
-    }
-    if (!shippingAddress.city.trim()) {
-        toast.error("شهر الزامی است");
-        return;
-    }
-    if (!shippingAddress.postal_code.trim()) {
-        toast.error("کدپستی الزامی است");
-        return;
-    }
-    if (!shippingAddress.phone.trim()) {
-        toast.error("تلفن تماس الزامی است");
-        return;
-    }
+    // ولیدیشن‌ها (همان کدهای قبلی شما)
+    if (!shippingAddress.first_name.trim()) { toast.error("نام الزامی است"); return; }
+    if (!shippingAddress.last_name.trim()) { toast.error("نام خانوادگی الزامی است"); return; }
+    if (!shippingAddress.address_1.trim()) { toast.error("آدرس دقیق الزامی است"); return; }
+    if (!shippingAddress.city.trim()) { toast.error("شهر الزامی است"); return; }
+    if (!shippingAddress.postal_code.trim()) { toast.error("کدپستی الزامی است"); return; }
+    if (!shippingAddress.phone.trim()) { toast.error("تلفن تماس الزامی است"); return; }
 
     if (!email || email.trim() === "") {
         setEmailError("لطفاً ایمیل خود را وارد کنید");
         toast.error("وارد کردن ایمیل الزامی است");
-        const emailInput = document.getElementById("email-input");
-        if(emailInput) emailInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        document.getElementById("email-input")?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
     }
-    
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
         setEmailError("فرمت ایمیل صحیح نیست.");
@@ -221,12 +248,12 @@ function CheckoutContent() {
         setShippingOptions(options);
         setStep(2); 
         toast.success("اطلاعات ثبت شد");
+        await refreshCartData(cartId); // آپدیت شدن دیتای سبد
       } else {
         toast.warning("روشی برای ارسال به این آدرس پیدا نشد");
       }
-    } catch (error: any) {
-      toast.error(error.message);
-    } finally { setLoading(false); }
+    } catch (error: any) { toast.error(error.message); } 
+    finally { setLoading(false); }
   };
 
   const handleSubmitShipping = async () => {
@@ -236,29 +263,10 @@ function CheckoutContent() {
           const result = await setShippingMethodAction(cartId, selectedShipping);
           if (!result.success) throw new Error(result.error);
 
-          if (result.session) {
-              const raw = result.session;
-              const session = Array.isArray(raw) ? raw[0] : raw;
-              if (session) {
-                  if (!session.provider_id) session.provider_id = "pp_zarinpal_zarinpal";
-                  setPaymentSessions([session]);
-                  setSelectedPaymentProvider(session.provider_id);
-              }
-          } else {
-             const cartData = await getCartDetails(cartId);
-             setPaymentSessions(cartData?.cart?.payment_collection?.payment_sessions || []);
-          }
-          
+          await refreshCartData(cartId); // حتما دیتا رو دوباره بگیریم تا هزینه ارسال اعمال بشه
           setStep(3); 
-      } catch (error: any) {
-          toast.error(error.message);
-      } finally {
-          setLoading(false);
-      }
-  };
-
-  const handleSelectPayment = async (providerId: string) => {
-      setSelectedPaymentProvider(providerId);
+      } catch (error: any) { toast.error(error.message); } 
+      finally { setLoading(false); }
   };
 
   const extractPaymentUrl = (session: any): string | null => {
@@ -270,44 +278,37 @@ function CheckoutContent() {
 
   const handleFinalPayment = async () => {
     if (searchParams.get("payment_status") === "success") return;
-
-    if (!cartId || !selectedPaymentProvider) {
-        toast.error("درگاه انتخاب نشده است");
-        return;
-    }
-    setLoading(true);
+    if (!cartId || !selectedPaymentProvider) { toast.error("درگاه انتخاب نشده است"); return; }
     
+    setLoading(true);
     try {
       const currentSession = paymentSessions.find(s => s.provider_id === selectedPaymentProvider);
       let paymentUrl = extractPaymentUrl(currentSession);
 
-      if (paymentUrl) {
-          window.location.href = paymentUrl;
-          return;
-      }
+      if (paymentUrl) { window.location.href = paymentUrl; return; }
 
       const freshCartData = await getCartDetails(cartId);
       const freshSessions = freshCartData?.cart?.payment_collection?.payment_sessions || [];
       const session = freshSessions.find((s: any) => s.provider_id === selectedPaymentProvider);
       
       paymentUrl = extractPaymentUrl(session);
-
-      if (paymentUrl) {
-          window.location.href = paymentUrl;
-          return;
-      }
+      if (paymentUrl) { window.location.href = paymentUrl; return; }
+      
       throw new Error("لینک پرداخت یافت نشد.");
-
     } catch (error: any) {
-      console.error(error);
       toast.error(error.message);
       setLoading(false);
     }
   };
 
-  const subtotal = items.reduce((acc, item) => acc + item.unit_price * item.quantity, 0);
+  // مقادیر پیش‌فرض در صورتی که API با مشکل مواجه شود
+  const fallbackSubtotal = items.reduce((acc, item) => acc + item.unit_price * item.quantity, 0);
+  const displaySubtotal = fullCart?.subtotal ?? fallbackSubtotal;
+  const displayShipping = fullCart?.shipping_total ?? (selectedShipping ? (shippingOptions.find(o => o.id === selectedShipping)?.amount || 0) : 0);
+  const displayDiscount = fullCart?.discount_total ?? 0;
+  const displayTotal = fullCart?.total ?? (displaySubtotal + displayShipping - displayDiscount);
 
-  if (initializing) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-blue-600" /></div>;
+  if (initializing) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin text-blue-600 w-10 h-10" /></div>;
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20 pt-10" dir="rtl">
@@ -317,6 +318,7 @@ function CheckoutContent() {
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 max-w-6xl mx-auto">
           
           <div className="lg:col-span-8 space-y-6">
+            {/* -- بخش اول (آدرس) کاملا دست نخورده مثل قبل -- */}
             <CardContainer active={step === 1} done={step > 1} title="۱. اطلاعات ارسال" icon={<MapPin className="w-5 h-5"/>}>
                 {step === 1 ? (
                     <div className="space-y-4">
@@ -405,6 +407,7 @@ function CheckoutContent() {
                 )}
             </CardContainer>
 
+            {/* -- بخش دوم (ارسال) -- */}
             <CardContainer active={step === 2} done={step > 2} title="۲. شیوه ارسال" icon={<Truck className="w-5 h-5"/>}>
                 {step === 2 ? (
                     <div className="space-y-6">
@@ -434,12 +437,13 @@ function CheckoutContent() {
                 )}
             </CardContainer>
 
+            {/* -- بخش سوم (پرداخت) -- */}
             <CardContainer active={step === 3} done={false} title="۳. پرداخت" icon={<CreditCard className="w-5 h-5"/>}>
                 {step === 3 && (
                     <div className="space-y-6">
                         <p className="text-sm text-gray-500">لطفاً درگاه پرداخت مورد نظر خود را انتخاب کنید:</p>
                         
-                        <RadioGroup onValueChange={handleSelectPayment} value={selectedPaymentProvider} className="grid gap-3">
+                        <RadioGroup onValueChange={(val) => setSelectedPaymentProvider(val)} value={selectedPaymentProvider} className="grid gap-3">
                             {paymentSessions.length > 0 ? (
                                 paymentSessions.map((session) => (
                                     <div key={session.id} className={`flex items-center space-x-reverse space-x-3 border p-4 rounded-xl cursor-pointer transition-all ${selectedPaymentProvider === session.provider_id ? "border-green-500 bg-green-50 ring-1 ring-green-500" : "hover:bg-gray-50"}`}>
@@ -487,22 +491,81 @@ function CheckoutContent() {
                 <div className="bg-gray-50 p-4 border-b">
                     <h2 className="font-bold">خلاصه سفارش</h2>
                 </div>
+                
                 <div className="p-4 space-y-4">
-                    <div className="flex justify-between"><span>جمع کل</span><span>{formatPrice(subtotal, currencyCode)}</span></div>
-                    {selectedShipping && (
-                        <div className="flex justify-between text-green-600">
-                            <span>هزینه ارسال</span>
-                            <span>{formatPrice(shippingOptions.find(o => o.id === selectedShipping)?.amount || 0, currencyCode)}</span>
+                    {/* فیلد اعمال کد تخفیف */}
+                    <div className="space-y-3 pb-4 border-b border-gray-100">
+                        <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                            <TicketPercent className="w-4 h-4" />
+                            کد تخفیف
+                        </Label>
+                        <div className="flex gap-2">
+                            <Input 
+                                value={promoCode}
+                                onChange={(e) => setPromoCode(e.target.value)}
+                                placeholder="کد تخفیف خود را وارد کنید"
+                                className="h-10 text-center dir-ltr flex-1"
+                                disabled={isPromoLoading}
+                            />
+                            <Button 
+                                onClick={handleApplyPromo}
+                                disabled={!promoCode.trim() || isPromoLoading}
+                                variant="secondary"
+                                className="h-10 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-6"
+                            >
+                                {isPromoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "ثبت"}
+                            </Button>
+                        </div>
+                        {promoError && <p className="text-red-500 text-xs">{promoError}</p>}
+
+                        {/* نمایش تخفیف‌های اعمال شده */}
+                        {fullCart?.promotions && fullCart.promotions.length > 0 && (
+                            <div className="flex flex-col gap-2 mt-3">
+                                {fullCart.promotions.map((promo: any) => (
+                                    <div key={promo.id} className="bg-green-50 border border-green-200 text-green-700 text-sm px-3 py-2 rounded-lg flex items-center justify-between w-full shadow-sm">
+                                        <div className="flex items-center gap-2">
+                                            <CheckCircle className="w-4 h-4"/>
+                                            <span className="font-bold">{promo.code ? promo.code : 'تخفیف خودکار (کمپین)'}</span>
+                                        </div>
+                                        {promo.code && (
+                                            <button 
+                                                onClick={() => handleRemovePromo(promo.code)}
+                                                disabled={isPromoLoading}
+                                                className="text-red-500 hover:bg-red-100 p-1 rounded-full transition-colors"
+                                                title="حذف تخفیف"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* جزئیات مبالغ (تغذیه از دیتای زنده مدوسا) */}
+                    <div className="flex justify-between text-gray-600">
+                        <span>جمع کل کالاها</span>
+                        <span>{formatPrice(displaySubtotal, currencyCode)}</span>
+                    </div>
+
+                    {displayDiscount > 0 && (
+                        <div className="flex justify-between text-red-500 font-medium">
+                            <span>تخفیف اعمال شده</span>
+                            <span className="dir-ltr">- {formatPrice(displayDiscount, currencyCode)}</span>
                         </div>
                     )}
-                    <div className="flex justify-between text-xl font-black border-t pt-4">
-                        <span>مبلغ نهایی</span>
-                        <span>
-                            {formatPrice(
-                                subtotal + (selectedShipping ? (shippingOptions.find(o => o.id === selectedShipping)?.amount || 0) : 0),
-                                currencyCode
-                            )}
-                        </span>
+
+                    {step > 1 && (
+                        <div className="flex justify-between text-gray-600">
+                            <span>هزینه ارسال</span>
+                            <span>{displayShipping > 0 ? formatPrice(displayShipping, currencyCode) : "رایگان"}</span>
+                        </div>
+                    )}
+
+                    <div className="flex justify-between text-xl font-black border-t pt-4 text-blue-700">
+                        <span>مبلغ قابل پرداخت</span>
+                        <span>{formatPrice(displayTotal, currencyCode)}</span>
                     </div>
                 </div>
              </div>
@@ -513,7 +576,6 @@ function CheckoutContent() {
   );
 }
 
-// --- کامپوننت پوششی (Wrapper) برای رفع ارور بیلد ---
 export default function CheckoutPage() {
   return (
     <Suspense fallback={
@@ -542,7 +604,6 @@ function CardContainer({ children, active, done, title, icon }: any) {
                 </div>
             </div>
             
-            {/* اصلاحیه: محتوا فقط وقتی مخفی شود که نه فعال است و نه تمام شده */}
             <div className={`p-6 transition-all duration-300 ${(!active && !done) ? "hidden" : "block"}`}>
                 {children}
             </div>

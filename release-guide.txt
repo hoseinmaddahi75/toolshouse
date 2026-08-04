@@ -1,0 +1,8 @@
+قبل از آپلود روی سرور، این تغییرات رو باید اعمال کنیم.
+توی فایل
+/media/hosein/personal1/programing/js/medusa/my-medusa-storefront/.env
+محتوا باید این شکلی باشه:
+NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=pk_365b4257ed94ddf6811fbba11b3a26303bd6a945a0040614f4da5e1b10ca37d6
+NEXT_PUBLIC_MEDUSA_BACKEND_URL=https://api.toolshouse.ir
+MEDUSA_BACKEND_URL=http://backend:9000
+تمام.

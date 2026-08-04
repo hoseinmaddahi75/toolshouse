@@ -58,7 +58,7 @@ export async function registerShipmentAction(
         {
           tracking_number: tracking,
           tracking_url: `https://tracking.post.ir/?id=${tracking}`,
-          label_url: "no-label" // فیلد اجباری در V2
+          label_url: "https://tracking.post.ir"
         },
       ],
     };

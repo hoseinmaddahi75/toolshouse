@@ -6,7 +6,8 @@
 - [x] فاز 2: پیاده‌سازی فرانت‌اند Next.js
 - [x] فاز 3: یکپارچه‌سازی پرداخت زرینپال
 - [x] فاز 4: سیستم احراز هویت (OTP)
-- [ ] فاز 5: تست و دیپلوی
+- [x] فاز 5: تست و دیپلوی (رسیدن به نسخه پایدار v1.0.0)
+- [ ] فاز 6: توسعه فیچرهای جدید (Workflow محلی)
 
 ## معرفی پروژه
 
@@ -196,13 +197,22 @@ FARAZ_SMS_USER=your_faraz_user
 FARAZ_SMS_PASS=your_faraz_pass
 MELIPAYAMAK_USER=your_melipayamak_user
 MELIPAYAMAK_PASS=your_melipayamak_pass
+FRONTEND_URL=https://toolshouse.ir
+ADMIN_CORS=https://toolshouse.ir,http://localhost:3000
+STORE_CORS=https://toolshouse.ir,http://localhost:3000
+AUTH_CORS=https://toolshouse.ir,http://localhost:3000
 ```
 
 ### Frontend (`my-medusa-storefront/.env`)
+**برای سرور (پروداکشن - تنظیم در GitHub Actions):**
 ```env
-NEXT_PUBLIC_BACKEND_URL=https://api.toolshouse.ir
-NEXT_PUBLIC_FRONTEND_URL=https://toolshouse.ir
-```
+NEXT_PUBLIC_MEDUSA_BACKEND_URL=[https://api.toolshouse.ir](https://api.toolshouse.ir)
+NEXT_PUBLIC_BASE_URL=[https://toolshouse.ir](https://toolshouse.ir)
+
+## برای محیط لوکال
+
+NEXT_PUBLIC_MEDUSA_BACKEND_URL=http://localhost:9000
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
 
 ### متغیرهای Docker Compose
 | متغیر | توضیح | استفاده در |
@@ -313,6 +323,16 @@ NEXT_PUBLIC_FRONTEND_URL=https://toolshouse.ir
 9. **راه‌اندازی اولیه دیتابیس**:
    در دیتابیس خالی، جدولهای بلاگ (`blog_posts`, `blog_categories`, `blog_comments`) به صورت خودکار ایجاد **نمی‌شوند**. باید از APIهای [`/admin/setup-blog`](my-medusa-backend/src/api/admin/setup-blog/route.ts:1) و [`/admin/setup-blog-db`](my-medusa-backend/src/api/admin/setup-blog-db/route.ts:1) برای ایجاد اولیه استفاده کرد.
 
+11. **احراز هویت ادمین در داشبورد کاستوم (CORS & Credentials):**
+    برای ارسال درخواست‌های `fetch` از داشبورد اختصاصی فرانت‌اند به مسیرهای `/admin/...` در بک‌اند، حتماً باید `credentials: "include"` در تنظیمات fetch قرار داده شود. در غیر این صورت، کوکی `_medusa_admin_token` ارسال نشده و با خطای 401/403 مواجه می‌شوید.
+
+12. **ریدارکت‌های درگاه پرداخت (Hardcoded URLs):**
+    در پیاده‌سازی APIهای بازگشتی (Callback) مانند زرین‌پال، هرگز از آدرس‌های هاردکد شده مثل `http://localhost:3000` برای `res.redirect` استفاده نکنید. همیشه از متغیر `process.env.FRONTEND_URL` استفاده کنید تا در محیط پروداکشن مشتری به درستی به سایت اصلی بازگردد. همچنین در درگاه‌های تستی (Mock) از آدرس‌های نسبی (Relative) استفاده شود.
+
+13. **چرخه توسعه و GitHub Actions (The CI/CD Trap):**
+    بیلد شدن داکر در GitHub Actions حدود ۲۰ دقیقه زمان می‌برد. برای توسعه و تست تغییرات ظاهری یا فیچرهای جدید، نباید با هر تغییر کد را Push کرد. توسعه باید کاملاً روی سیستم Local (با `npm run dev` و `.env.local`) انجام شود و Push به شاخه `main` فقط برای دیپلوی نهایی و پایدار (Production) صورت گیرد.
+
+
 ## چکلیست دیپلوی روی سرور جدید
 
 ### قبل از دیپلوی
@@ -322,6 +342,9 @@ NEXT_PUBLIC_FRONTEND_URL=https://toolshouse.ir
 - [ ] اطلاعات برندینگ (نام، لوگو، رنگها) را در فرانت‌اند اعمال کنید
 - [ ] محصولات و دستهبندی‌ها را وارد کنید
 - [ ] فایل `product-reviews.json` را از سرور قدیمی کپی کنید (اگر وجود دارد)
+- [ ] جایگزینی Merchant ID تستی با Merchant ID واقعی مشتری
+- [ ] ساخت اکانت ادمین اصلی برای مشتری و حذف/تغییر رمز اکانت‌های تستی (پیش‌فرض مدوسا)
+- [ ] راه‌اندازی و تست سیستم ارسال ایمیل (SMTP) برای فاکتورها
 
 ### دیپلوی
 - [ ] `docker compose down` روی سرور قدیمی (اگر وجود دارد)

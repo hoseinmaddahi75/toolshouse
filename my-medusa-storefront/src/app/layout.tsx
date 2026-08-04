@@ -3,7 +3,6 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from "sonner";
-// 👇 ایمپورت‌ها را اینجا انجام دهید
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import ClientLayout from "@/components/layout/ClientLayout";
@@ -23,7 +22,7 @@ const vazir = localFont({
 
 export const metadata: Metadata = {
   title: "خانه ابزار",
-  description: "فروشگاه اینترنتی مدرن با نکست جی‌اس و مدوسا",
+  description: "فروشگاه اینترنتی خانه ابزار",
 };
 
 export default function RootLayout({

@@ -15,8 +15,8 @@ import {
   Tag,
   TableProperties,
   MessageSquareQuote,
-  ChevronLeft, // 👈 آیکون فلش بسته
-  ChevronDown  // 👈 آیکون فلش باز
+  ChevronLeft,
+  ChevronDown
 } from "lucide-react";
 import { SwatchIcon } from "@heroicons/react/24/outline";
 import { cn } from "@/lib/utils";
@@ -55,7 +55,8 @@ export default function AdminSidebar() {
       // 👇 زیرمنوهای محصولات
       children: [
         { title: "لیست محصولات", href: "/dashboard/products" },
-        { title: "دسته‌بندی‌ها", href: "/dashboard/categories" }, // مسیر صفحه دسته‌بندی که ساختید
+        { title: "دسته‌بندی‌ها", href: "/dashboard/categories" },
+        { title: "تخفیف ها", href: "/dashboard/promotions" },
       ]
     },
     {

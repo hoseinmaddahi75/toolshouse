@@ -1,56 +1,59 @@
-// src/app/(admin)/dashboard/orders/page.tsx
 import { cookies } from "next/headers";
-import OrdersTable from "@/components/admin/orders-table"; // ایمپورت کامپوننت جدید
+import OrdersTable from "@/components/admin/orders-table";
 import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
-// تابع فچ کردن سفارشات (سمت سرور)
-async function getOrders() {
+// 💡 اضافه شدن searchParams برای خواندن شماره صفحه از URL
+export default async function AdminOrdersPage({
+  searchParams,
+}: {
+  searchParams: { page?: string };
+}) {
+  const page = Number(searchParams?.page) || 1;
+  const limit = 15; // تعداد سفارش در هر صفحه (قابل تغییر)
+  const offset = (page - 1) * limit; // محاسبه نقطه شروع
+
   const cookieStore = await cookies();
   const token = cookieStore.get("_medusa_admin_token")?.value;
-const backendUrl = MEDUSA_BACKEND_URL;
 
-  if (!token) return { orders: [], count: 0 };
+  let orders = [];
+  let count = 0;
 
-  try {
-    // پارامترها برای Medusa V2
-    // نکته مهم: در V2 برای گرفتن ریلیشن‌ها از + استفاده می‌کنیم
-    const params = new URLSearchParams({
-      limit: "50",
-      order: "-created_at",
-      fields: "+items,+shipping_address,+customer", // 👈 اینجوری مطمئن می‌شیم آیتم‌ها و آدرس میان
-    });
+  if (token) {
+    try {
+      const params = new URLSearchParams({
+        limit: limit.toString(),
+        offset: offset.toString(), // 💡 ارسال آفست به مدوسا
+        order: "-created_at",
+        fields: "+items,+shipping_address.first_name,+shipping_address.last_name,+customer.first_name,+customer.last_name,+customer.email",
+      });
 
-    const res = await fetch(`${backendUrl}/admin/orders?${params.toString()}`, {
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`, // 🔑 کلید طلایی
-      },
-      cache: "no-store",
-      credentials: "include",
-    });
+      const res = await fetch(`${MEDUSA_BACKEND_URL}/admin/orders?${params.toString()}`, {
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        cache: "no-store",
+      });
 
-    if (!res.ok) {
-      console.error(`Orders Fetch Error: ${res.status}`);
-      return { orders: [], count: 0 };
+      if (res.ok) {
+        const data = await res.json();
+        orders = data.orders || [];
+        count = data.count || 0;
+      }
+    } catch (error) {
+      console.error("Network Error:", error);
     }
-
-    const data = await res.json();
-    return { 
-      orders: data.orders || [], 
-      count: data.count || data.orders?.length || 0 
-    };
-
-  } catch (error) {
-    console.error("Network Error:", error);
-    return { orders: [], count: 0 };
   }
-}
 
-export default async function AdminOrdersPage() {
-  // دیتا قبل از رندر شدن صفحه آماده می‌شود (بدون لودینگ اسپینر!)
-  const { orders, count } = await getOrders();
-
-  return <OrdersTable orders={orders} count={count} />;
+  // پاس دادن اطلاعات صفحه‌بندی به کامپوننت جدول
+  return (
+    <OrdersTable 
+      orders={orders} 
+      count={count} 
+      currentPage={page} 
+      limit={limit} 
+    />
+  );
 }
