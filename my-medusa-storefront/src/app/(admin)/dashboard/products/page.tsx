@@ -15,26 +15,24 @@ interface PageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-// 🟢 تابع دریافت محصولات با قابلیت فیلتر و جستجو
 async function getAdminProducts(page: number, limit: number, query: string, order: string) {
   const cookieStore = await cookies();
   const token = cookieStore.get("_medusa_admin_token")?.value;
-const backendUrl = MEDUSA_BACKEND_URL;
+  const backendUrl = MEDUSA_BACKEND_URL;
 
   if (!token) return { products: [], count: 0 };
 
   try {
     const offset = (page - 1) * limit;
     
+    // تعریف دقیق و شفاف فیلدها بدون تداخل در Query Engine مدوسا v2
     const params = new URLSearchParams({
       limit: limit.toString(),
       offset: offset.toString(),
-      // فیلدهای مورد نیاز برای نمایش و محاسبه موجودی
-      fields: "id,title,thumbnail,handle,status,+variants.prices,+variants.options,*variants.inventory_items.inventory.location_levels,+status",
-      order: order // اعمال سورت
+      fields: "id,title,thumbnail,handle,status,*variants.prices,*variants.inventory_items.inventory.location_levels",
+      order: order
     });
 
-    // اعمال جستجو
     if (query) {
         params.append("q", query);
     }
@@ -62,24 +60,42 @@ const backendUrl = MEDUSA_BACKEND_URL;
   }
 }
 
-// توابع کمکی محاسباتی
-const findPrice = (variants: any[]) => {
-    if (!variants || variants.length === 0) return 0;
-    const prices = variants[0].prices || [];
-    const irrPrice = prices.find((p: any) => p.currency_code === "irr" || p.currency_code === "irt");
-    if (irrPrice) return irrPrice.amount;
-    return prices[0]?.amount || 0;
+// محاسبه قیمت اصلی و تخفیف برای لیست ادمین
+const getPrices = (variants: any[]) => {
+    if (!variants || !Array.isArray(variants)) return { original: 0, calculated: null };
+
+    for (const variant of variants) {
+        const prices = variant.prices || variant.price_set?.prices || [];
+        
+        const irrPrices = prices.filter((p: any) => 
+            p.currency_code?.toLowerCase() === "irr" || 
+            p.currency_code?.toLowerCase() === "irt"
+        );
+        
+        if (irrPrices.length > 0) {
+            const amounts = irrPrices.map((p: any) => Number(p.amount) || 0);
+            const original = Math.max(...amounts);
+            const min = Math.min(...amounts);
+            
+            return {
+                original: original,
+                calculated: min < original ? min : null
+            };
+        }
+    }
+    return { original: 0, calculated: null };
 };
 
+// محاسبه دقیق موجودی انبار
 const calculateInventory = (variants: any[]) => {
-    if (!variants) return 0;
+    if (!variants || !Array.isArray(variants)) return 0;
     return variants.reduce((totalAcc: number, variant: any) => {
         if (!variant.inventory_items || variant.inventory_items.length === 0) {
-            return totalAcc + (variant.inventory_quantity || 0);
+            return totalAcc + (Number(variant.inventory_quantity) || 0);
         }
         const variantStock = variant.inventory_items.reduce((invAcc: number, link: any) => {
             const levels = link.inventory?.location_levels || [];
-            return invAcc + levels.reduce((lvlAcc: number, l: any) => lvlAcc + (l.stocked_quantity || 0), 0);
+            return invAcc + levels.reduce((lvlAcc: number, l: any) => lvlAcc + (Number(l.stocked_quantity) || 0), 0);
         }, 0);
         return totalAcc + variantStock;
     }, 0);
@@ -139,65 +155,86 @@ export default async function AdminProductsPage({ searchParams }: PageProps) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {products.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="text-center py-16 text-gray-400">
-                    <div className="flex flex-col items-center justify-center w-full">
-                        <Box className="w-10 h-10 mb-2 opacity-20"/>
-                        <p>هیچ محصولی پیدا نشد.</p>
-                        {query && <p className="text-xs mt-1 text-gray-500">نتیجه‌ای برای "{query}" یافت نشد.</p>}
-                    </div>
-                  </td>
-                </tr>
+  {products.length === 0 ? (
+    <tr>
+      <td colSpan={6} className="text-center py-16 text-gray-400">
+        <div className="flex flex-col items-center justify-center w-full">
+            <Box className="w-10 h-10 mb-2 opacity-20"/>
+            <p>هیچ محصولی پیدا نشد.</p>
+            {query && <p className="text-xs mt-1 text-gray-500">نتیجه‌ای برای "{query}" یافت نشد.</p>}
+        </div>
+      </td>
+    </tr>
+  ) : (
+    products.map((product: any) => {
+      const { original, calculated } = getPrices(product.variants);
+      const totalInventory = calculateInventory(product.variants);
+
+      return (
+        <tr key={product.id} className="group hover:bg-gray-50 transition-colors">
+          {/* ستون ۱: تصویر */}
+          <td className="px-6 py-3">
+            <div className="relative h-12 w-12 rounded-lg border border-gray-200 overflow-hidden bg-gray-50">
+              {product.thumbnail ? (
+                <Image src={product.thumbnail} alt={product.title || ""} fill className="object-cover" unoptimized />
               ) : (
-                products.map((product: any) => {
-                  const price = findPrice(product.variants);
-                  const totalInventory = calculateInventory(product.variants);
-
-                  return (
-                    <tr key={product.id} className="group hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-3">
-                        <div className="relative h-12 w-12 rounded-lg border border-gray-200 overflow-hidden bg-gray-50">
-                          {product.thumbnail ? (
-                            <Image src={product.thumbnail} alt={product.title || ""} fill className="object-cover" unoptimized />
-                          ) : (
-                            <div className="h-full w-full flex items-center justify-center text-gray-300">
-                              <Box className="h-5 w-5" />
-                            </div>
-                          )}
-                        </div>
-                      </td>
-
-                      <td className="px-6 py-3 font-medium text-gray-900">
-                        {product.title}
-                        <div className="text-xs text-gray-400 mt-1 font-mono">{product.handle}</div>
-                      </td>
-
-                      <td className="px-6 py-3">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${totalInventory > 0 ? 'bg-blue-50 text-blue-700' : 'bg-red-50 text-red-700'}`}>
-                          {totalInventory} عدد
-                        </span>
-                      </td>
-
-                      <td className="px-6 py-3 text-gray-600">
-                        {formatPrice(price, "irr")}
-                      </td>
-
-                      <td className="px-6 py-3">
-                        <span className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded w-fit ${product.status === 'published' ? 'text-green-600 bg-green-50' : 'text-gray-600 bg-gray-100'}`}>
-                          <span className={`h-1.5 w-1.5 rounded-full ${product.status === 'published' ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></span>
-                          {product.status === 'published' ? 'منتشر شده' : 'پیش‌نویس'}
-                        </span>
-                      </td>
-
-                      <td className="px-6 py-3">
-                        <ProductActions id={product.id} />
-                      </td>
-                    </tr>
-                  );
-                })
+                <div className="h-full w-full flex items-center justify-center text-gray-300">
+                  <Box className="h-5 w-5" />
+                </div>
               )}
-            </tbody>
+            </div>
+          </td>
+
+          {/* ستون ۲: عنوان و هپندل */}
+          <td className="px-6 py-3 font-medium text-gray-900">
+            {product.title}
+            <div className="text-xs text-gray-400 mt-1 font-mono">{product.handle}</div>
+          </td>
+
+          {/* ستون ۳: موجودی کل */}
+          <td className="px-6 py-3">
+            <span className={`px-2 py-1 rounded text-xs font-medium ${totalInventory > 0 ? 'bg-blue-50 text-blue-700' : 'bg-red-50 text-red-700'}`}>
+              {totalInventory} عدد
+            </span>
+          </td>
+
+          {/* ستون ۴: قیمت (پایه و تخفیف‌خورده) */}
+          <td className="px-6 py-3 text-gray-600">
+            <div className="flex flex-col justify-center items-start gap-0.5">
+              {calculated ? (
+                <>
+                  <span className="line-through text-[11px] text-gray-400">
+                    {formatPrice(original, "irr")}
+                  </span>
+                  <span className="font-semibold text-red-600">
+                    {formatPrice(calculated, "irr")}
+                  </span>
+                </>
+              ) : (
+                <span className="font-medium text-gray-800">
+                  {formatPrice(original, "irr")}
+                </span>
+              )}
+            </div>
+          </td>
+
+          {/* ستون ۵: وضعیت */}
+          <td className="px-6 py-3">
+            <span className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded w-fit ${product.status === 'published' ? 'text-green-600 bg-green-50' : 'text-gray-600 bg-gray-100'}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${product.status === 'published' ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></span>
+              {product.status === 'published' ? 'منتشر شده' : 'پیش‌نویس'}
+            </span>
+          </td>
+
+          {/* ستون ۶: عملیات */}
+          <td className="px-6 py-3">
+            <ProductActions id={product.id} />
+          </td>
+        </tr>
+      );
+    })
+  )}
+</tbody>
           </table>
         </div>
         

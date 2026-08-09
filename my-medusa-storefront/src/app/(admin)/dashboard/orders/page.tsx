@@ -1,18 +1,22 @@
+// src/app/(admin)/dashboard/orders/page.tsx
 import { cookies } from "next/headers";
 import OrdersTable from "@/components/admin/orders-table";
 import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
 
-// 💡 اضافه شدن searchParams برای خواندن شماره صفحه از URL
 export default async function AdminOrdersPage({
   searchParams,
 }: {
-  searchParams: { page?: string };
+  // 💡 تغییر به Promise
+  searchParams: Promise<{ page?: string }>;
 }) {
-  const page = Number(searchParams?.page) || 1;
-  const limit = 15; // تعداد سفارش در هر صفحه (قابل تغییر)
-  const offset = (page - 1) * limit; // محاسبه نقطه شروع
+  // 💡 باز کردن Promise با await
+  const params = await searchParams;
+  
+  const page = Number(params?.page) || 1;
+  const limit = 15;
+  const offset = (page - 1) * limit;
 
   const cookieStore = await cookies();
   const token = cookieStore.get("_medusa_admin_token")?.value;
@@ -22,14 +26,14 @@ export default async function AdminOrdersPage({
 
   if (token) {
     try {
-      const params = new URLSearchParams({
+      const apiParams = new URLSearchParams({
         limit: limit.toString(),
-        offset: offset.toString(), // 💡 ارسال آفست به مدوسا
+        offset: offset.toString(),
         order: "-created_at",
         fields: "+items,+shipping_address.first_name,+shipping_address.last_name,+customer.first_name,+customer.last_name,+customer.email",
       });
 
-      const res = await fetch(`${MEDUSA_BACKEND_URL}/admin/orders?${params.toString()}`, {
+      const res = await fetch(`${MEDUSA_BACKEND_URL}/admin/orders?${apiParams.toString()}`, {
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,
@@ -47,7 +51,6 @@ export default async function AdminOrdersPage({
     }
   }
 
-  // پاس دادن اطلاعات صفحه‌بندی به کامپوننت جدول
   return (
     <OrdersTable 
       orders={orders} 

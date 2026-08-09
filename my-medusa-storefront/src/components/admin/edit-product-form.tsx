@@ -1,4 +1,3 @@
-// src/components/admin/edit-product-form.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -7,9 +6,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  ChevronRight, Save, ImagePlus, Loader2, X, Trash2, 
-  Plus, Layers, RefreshCw, AlertTriangle, TableProperties, Ruler 
+import {
+  ChevronRight, Save, ImagePlus, Loader2, X, Trash2,
+  Plus, Layers, RefreshCw, AlertTriangle, TableProperties, Ruler
 } from "lucide-react";
 import CategorySelector from "@/components/admin/category-selector";
 import RichTextEditor from "@/components/admin/rich-text-editor";
@@ -18,11 +17,15 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { MEDUSA_BACKEND_URL } from "@/lib/constants";
+import RelatedProductSelector from "@/components/admin/RelatedProductSelector";
 
-// --- تایپ‌ها ---
 type ProductImage = { id?: string; url: string; isThumbnail: boolean; };
 type EditableVariant = {
-  id?: string; title: string; sku: string; price: string; inventory: string; inventory_item_id?: string; options: Record<string, string>; 
+  id?: string; title: string; sku: string; price: string;
+  price_id?: string;
+  sale_price?: string;
+  sale_price_id?: string; 
+  inventory: string; weight: string; inventory_item_id?: string; options: Record<string, string>;
 };
 type ProductOption = { id: string; title: string; values: string[]; };
 type GlobalAttribute = { id: string; title: string; values: { id: string; value: string }[]; };
@@ -34,10 +37,7 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const BASE_URL = MEDUSA_BACKEND_URL;
-
-  const authHeaders = {
-    "Authorization": `Bearer ${token}`
-  };
+  const authHeaders = { "Authorization": `Bearer ${token}` };
 
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
@@ -58,43 +58,81 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
   const [stockLocationId, setStockLocationId] = useState<string | null>(null);
   const [globalAttributes, setGlobalAttributes] = useState<GlobalAttribute[]>([]);
   const [selectedAttrs, setSelectedAttrs] = useState<Record<string, string[]>>({});
-  const [showVariantGenerator, setShowVariantGenerator] = useState(false); 
+  const [showVariantGenerator, setShowVariantGenerator] = useState(false);
+  const [relatedIds, setRelatedIds] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchAllData = async () => {
       try {
         setLoading(true);
-        const safeFetch = async (url: string) => {
+        const safeFetchAdmin = async (url: string) => {
           try {
             const res = await fetch(url, { headers: authHeaders, credentials: "include" });
             return res.ok ? res : null;
           } catch { return null; }
         };
 
+        const PRICE_LIST_ID = process.env.NEXT_PUBLIC_GLOBAL_SALE_PRICE_LIST_ID;
+        
         const [specsRes, sizesRes, locRes, attrsRes, scRes, spRes, productRes] = await Promise.all([
-            safeFetch(`${BASE_URL}/admin/product-resources?type=specs`),
-            safeFetch(`${BASE_URL}/admin/product-resources?type=sizes`),
-            safeFetch(`${BASE_URL}/admin/stock-locations`),
-            safeFetch(`${BASE_URL}/admin/global-attributes`),
-            safeFetch(`${BASE_URL}/admin/sales-channels`),
-            safeFetch(`${BASE_URL}/admin/shipping-profiles`),
-            safeFetch(`${BASE_URL}/admin/products/${id}/details`),
+            safeFetchAdmin(`${BASE_URL}/admin/product-resources?type=specs`),
+            safeFetchAdmin(`${BASE_URL}/admin/product-resources?type=sizes`),
+            safeFetchAdmin(`${BASE_URL}/admin/stock-locations`),
+            safeFetchAdmin(`${BASE_URL}/admin/global-attributes`),
+            safeFetchAdmin(`${BASE_URL}/admin/sales-channels`),
+            safeFetchAdmin(`${BASE_URL}/admin/shipping-profiles`),
+            safeFetchAdmin(`${BASE_URL}/admin/products/${id}/details`)
         ]);
 
-        if (!productRes) {
-            throw new Error("محصول یافت نشد");
+        if (!productRes) throw new Error("محصول یافت نشد");
+        const { product } = await productRes.json();
+
+        // استخراج قیمت حراج از Store API (دور زدن محدودیت ادمین)
+        let storeSalePricesMap: Record<string, { amount: number, id: string }> = {};
+        const pubKey = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "pk_82b953b964ad71f051bb02d1382200901c260d0e8628f845fd00856125b14336";
+        const storeHeaders = { "x-publishable-api-key": pubKey, "accept": "application/json" };
+
+        try {
+            const regionRes = await fetch(`${BASE_URL}/store/regions?limit=1`, { headers: storeHeaders });
+            if (regionRes.ok) {
+                const regionData = await regionRes.json();
+                const regionId = regionData.regions?.[0]?.id;
+
+                if (regionId && product.handle) {
+                    const storeProductRes = await fetch(
+                        `${BASE_URL}/store/products?handle=${product.handle}&region_id=${regionId}`,
+                        { headers: storeHeaders }
+                    );
+
+                    if (storeProductRes.ok) {
+                        const storeData = await storeProductRes.json();
+                        const storeProduct = storeData.products?.[0];
+                        if (storeProduct && storeProduct.variants) {
+                            storeProduct.variants.forEach((v: any) => {
+                                const cp = v.calculated_price;
+                                if (cp && cp.is_calculated_price_price_list && cp.calculated_price?.price_list_id === PRICE_LIST_ID) {
+                                    storeSalePricesMap[v.id] = {
+                                        amount: cp.calculated_amount,
+                                        id: cp.calculated_price.id
+                                    };
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("خطا در دریافت قیمت از Store API", e);
         }
 
         if (specsRes) { const sData = await specsRes.json(); setSpecTemplates(sData.data || []); }
         if (sizesRes) { const zData = await sizesRes.json(); setSizeGuides(zData.data || []); }
         if (locRes) { const lData = await locRes.json(); setStockLocationId(lData.stock_locations?.[0]?.id || null); }
         if (attrsRes) { const aData = await attrsRes.json(); setGlobalAttributes(aData.attributes || []); }
-
         if (scRes) {
             const scData = await scRes.json();
             if (scData.sales_channels?.length > 0) setDefaultSalesChannelId(scData.sales_channels[0].id);
         }
-
         if (spRes) {
             const spData = await spRes.json();
             if (spData.shipping_profiles?.length > 0) {
@@ -103,38 +141,42 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
             }
         }
 
-        const { product } = await productRes.json();
-
         setTitle(product.title || "");
         setSubtitle(product.subtitle || "");
         setHandle(product.handle || "");
         setDescription(product.description || "");
         setFullDescription((product.metadata?.full_description as string) || "");
-        
+        setRelatedIds(product.metadata?.related_product_ids || []);
         setSelectedSizeGuideId((product.metadata?.size_guide_id as string) || "");
         setSelectedSpecTemplateId((product.metadata?.spec_template_id as string) || "");
         setSpecValues((product.metadata?.specifications as Record<string, string>) || {});
-
         setImages((product.images || []).map((img: any) => ({
           id: img.id, url: img.url, isThumbnail: img.url === product.thumbnail
         })));
-        
         if (product.categories) setSelectedCategories(product.categories.map((c: any) => c.id));
         setProductOptions(product.options || []);
 
         if (product.variants) {
-           setVariants(product.variants.map((v: any) => ({
-                 id: v.id,
-                 title: v.title,
-                 sku: v.sku || "",
-                 price: v.prices?.[0]?.amount ? v.prices[0].amount.toString() : "0",
-                 inventory: v.inventory_quantity?.toString() || "0",
-                 inventory_item_id: v.inventory_item_id,
-                 options: v.options
-           })));
-        }
+           setVariants(product.variants.map((v: any) => {
+                 const basePriceObj = v.prices?.find((p: any) => p.price_list_id === null) || v.prices?.[0];
+                 const saleInfo = storeSalePricesMap[v.id]; 
 
-      } catch (error: any) { 
+                 return {
+                     id: v.id,
+                     title: v.title,
+                     sku: v.sku || "",
+                     price: basePriceObj?.amount ? basePriceObj.amount.toString() : "0",
+                     price_id: basePriceObj?.id,
+                     sale_price: saleInfo?.amount ? saleInfo.amount.toString() : "",
+                     sale_price_id: saleInfo?.id, 
+                     inventory: v.inventory_quantity?.toString() || "0",
+                     weight: v.weight?.toString() || "",
+                     inventory_item_id: v.inventory_item_id,
+                     options: v.options
+                 };
+           }));
+        }
+      } catch (error: any) {
           console.error(error);
           toast.error(error.message || "خطا در دریافت اطلاعات"); 
       } finally { setLoading(false); }
@@ -173,49 +215,87 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
           const t = attrTitles[index]; variantOptions[t] = val; titleParts.push(val);
         });
         return {
-          id: `NEW_${Date.now()}_${idx}`, title: titleParts.join(" / "),
-          sku: "", price: "0", inventory: "0", options: variantOptions
+          id: `NEW_${Date.now()}_${idx}`, 
+          title: titleParts.join(" / "),
+          sku: "", 
+          price: "0", 
+          sale_price: "", 
+          inventory: "0", 
+          weight: "", 
+          options: variantOptions
         };
     });
     setVariants(newVariants);
     setShowVariantGenerator(false);
-    toast.success("واریانت‌های جدید آماده ذخیره هستند");
+    toast.success("واریانتهای جدید آماده ذخیره هستند");
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+    const PRICE_LIST_ID = process.env.NEXT_PUBLIC_GLOBAL_SALE_PRICE_LIST_ID;
+
     try {
       const thumbnailImg = images.find(i => i.isThumbnail) || images[0];
+
       const updatePayload: any = {
           title, subtitle, handle, description,
           thumbnail: thumbnailImg?.url || null,
           images: images.map(img => ({ url: img.url })),
           categories: selectedCategories.map(id => ({ id })),
           origin_country: "IR",
+          weight: variants.length > 0 && variants[0].weight ? Number(variants[0].weight) : null,
           metadata: {
               full_description: fullDescription,
               size_guide_id: selectedSizeGuideId,
               size_guide_url: selectedSizeGuideId ? sizeGuides.find(s => s.id === selectedSizeGuideId)?.image_url : null,
               spec_template_id: selectedSpecTemplateId,
-              specifications: specValues 
+              specifications: specValues,
+              related_product_ids: relatedIds,
           },
       };
 
       if (defaultSalesChannelId) updatePayload.sales_channels = [{ id: defaultSalesChannelId }];
       if (defaultShippingProfileId) updatePayload.shipping_profile_id = defaultShippingProfileId;
 
-      await fetch(`${BASE_URL}/admin/products/${id}`, {
+      const productUpdateRes = await fetch(`${BASE_URL}/admin/products/${id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify(updatePayload),
         credentials: "include"
       });
 
+      if (!productUpdateRes.ok) throw new Error("خطا در ذخیره اطلاعات اصلی محصول");
+
       const newVariants = variants.filter(v => v.id?.startsWith("NEW_"));
+      
       if (newVariants.length > 0) {
           let prodDetails = await fetch(`${BASE_URL}/admin/products/${id}/details`, { headers: authHeaders, credentials: "include" }).then(r => r.json());
+          
+          // ۰. پیش‌تصفیه: نابود کردن Default Variant و Default Option (ارواح سرگردان) قبل از هر کاری
+          const variantsToDelete = prodDetails.product.variants.filter((v: any) =>
+              v.title === "Default Variant" || v.options?.some((o: any) => o.value === "Default Variant")
+          );
+          
+          for (const v of variantsToDelete) {
+              try { 
+                  await fetch(`${BASE_URL}/admin/products/${id}/variants/${v.id}`, { method: "DELETE", headers: authHeaders, credentials: "include" }); 
+              } catch(e) {}
+          }
+
+          const defaultOption = prodDetails.product.options?.find((o: any) => o.title === "Default Option");
+          if (defaultOption) {
+              try { 
+                  await fetch(`${BASE_URL}/admin/products/${id}/options/${defaultOption.id}`, { method: "DELETE", headers: authHeaders, credentials: "include" }); 
+              } catch(e) {}
+          }
+
+          // دریافت وضعیت جدید و تمیز پس از پاکسازی
+          await new Promise(r => setTimeout(r, 1000));
+          prodDetails = await fetch(`${BASE_URL}/admin/products/${id}/details`, { headers: authHeaders, credentials: "include" }).then(r => r.json());
           let currentOptions = prodDetails.product.options || [];
+
+          // ۱. ساخت آپشن‌های جدید (رنگ، سایز و ...)
           const newOptionTitles = Object.keys(selectedAttrs);
           let optionsModified = false;
 
@@ -224,6 +304,7 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
               if (!exists) {
                   const uniqueValues = [...new Set(newVariants.map(v => v.options[title]).filter(Boolean))];
                   if (uniqueValues.length === 0) uniqueValues.push("Default");
+                  
                   await fetch(`${BASE_URL}/admin/products/${id}/options`, {
                       method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
                       body: JSON.stringify({ title: title, values: uniqueValues }),
@@ -233,83 +314,255 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
               }
           }
 
-          if (optionsModified) await new Promise(r => setTimeout(r, 2000));
+          if (optionsModified) {
+              await new Promise(r => setTimeout(r, 2000));
+              prodDetails = await fetch(`${BASE_URL}/admin/products/${id}/details`, { headers: authHeaders, credentials: "include" }).then(r => r.json());
+              currentOptions = prodDetails.product.options || [];
+          }
 
-          prodDetails = await fetch(`${BASE_URL}/admin/products/${id}/details`, { headers: authHeaders, credentials: "include" }).then(r => r.json());
-          currentOptions = prodDetails.product.options || [];
-
+          // ۲. ساخت واریانت‌های جدید
           for (const v of newVariants) {
               const medusaOptionsPayload: Record<string, string> = {};
+              
               currentOptions.forEach((opt: any) => {
-                  if (v.options[opt.title]) medusaOptionsPayload[opt.title] = v.options[opt.title];
-                  else if (opt.title === "Default Option") medusaOptionsPayload[opt.title] = "Default Value";
-                  else medusaOptionsPayload[opt.title] = opt.values?.[0]?.value || "Default";
+                  if (opt.title === "Default Option") {
+                       let exactVal = opt.values?.[0]?.value;
+                       if (!exactVal) {
+                           const exVar = prodDetails.product.variants?.find((pv: any) => pv.options?.some((o:any) => o.option_id === opt.id));
+                           if (exVar) {
+                               const exOpt = exVar.options.find((o:any) => o.option_id === opt.id);
+                               if (exOpt) exactVal = exOpt.value;
+                           }
+                       }
+                       medusaOptionsPayload[opt.title] = exactVal || "Default Variant";
+                  } else {
+                      if (v.options[opt.title]) {
+                          medusaOptionsPayload[opt.title] = v.options[opt.title];
+                      } else {
+                          medusaOptionsPayload[opt.title] = opt.values?.[0]?.value || "Default";
+                      }
+                  }
               });
 
-              const createRes = await fetch(`${BASE_URL}/admin/products/${id}/variants`, {
-                  method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
-                  body: JSON.stringify({
-                      title: v.title, sku: v.sku || null, prices: [{ amount: Number(v.price), currency_code: "irr" }],
-                      options: medusaOptionsPayload, manage_inventory: true, allow_backorder: false, origin_country: "IR", material: null,
-                  }),
+              const variantPayloadToCreate = {
+                  title: v.title, 
+                  sku: v.sku || null, 
+                  prices: [{ amount: Number(v.price), currency_code: "irr" }],
+                  options: medusaOptionsPayload, 
+                  manage_inventory: true, 
+                  allow_backorder: false, 
+                  origin_country: "IR", 
+                  material: null,
+                  weight: v.weight ? Number(v.weight) : null
+              };
+
+              const createVarRes = await fetch(`${BASE_URL}/admin/products/${id}/variants`, {
+                  method: "POST", 
+                  headers: { "Content-Type": "application/json", ...authHeaders },
+                  body: JSON.stringify(variantPayloadToCreate),
                   credentials: "include"
               });
-
-              if (createRes.ok) {
-                  const createdData = await createRes.json();
-                  const createdVariant = createdData.product_variant || createdData.variant;
-                  if (createdVariant && stockLocationId) {
-                      await updateInventoryWithRetry(createdVariant.inventory_item_id, Number(v.inventory), stockLocationId);
+              
+              if (!createVarRes.ok) {
+                  const errorText = await createVarRes.text();
+                  // تغییر کلیدی: اگر مدوسا گفت متغیر از قبل وجود دارد، کِرَش نمی‌کنیم!
+                  if (errorText.includes("already exists")) {
+                      console.warn(`واریانت ${v.title} از قبل در دیتابیس وجود دارد. ایجاد مجدد نادیده گرفته شد.`);
+                  } else {
+                      console.error("Payload sent:", variantPayloadToCreate);
+                      throw new Error(`خطا در ساخت واریانت: ${v.title} - ${errorText}`);
                   }
               }
           }
 
-          const variantsToDelete = prodDetails.product.variants.filter((v: any) => 
-              v.options?.some((o: any) => o.option?.title === "Default Option" || o.value === "Default Value")
-          );
-          for (const v of variantsToDelete) {
-              await fetch(`${BASE_URL}/admin/products/${id}/variants/${v.id}`, { method: "DELETE", headers: authHeaders, credentials: "include" });
+          // ۳. دریافت دیتای نهایی و آپدیت قیمت‌ها، انبار و تخفیف‌ها
+          await new Promise(r => setTimeout(r, 1500));
+          prodDetails = await fetch(`${BASE_URL}/admin/products/${id}/details`, { headers: authHeaders, credentials: "include" }).then(r => r.json());
+
+          for (const v of newVariants) {
+              const dbVariant = prodDetails.product.variants.find((dbV: any) => dbV.title === v.title);
+              if (dbVariant) {
+                  // آپدیت قیمت پایه و اطلاعات دیگر (چون اگر واریانت از قبل وجود داشته، ممکن است قیمت پایه در UI تغییر کرده باشد)
+                  const updatePayload: any = { sku: v.sku || null, weight: v.weight ? Number(v.weight) : null };
+                  const irrPrice = dbVariant.prices?.find((p: any) => p.currency_code?.toLowerCase() === "irr");
+                  if (irrPrice) {
+                      updatePayload.prices = [{ id: irrPrice.id, amount: Number(v.price), currency_code: "irr" }];
+                  } else {
+                      updatePayload.prices = [{ amount: Number(v.price), currency_code: "irr" }];
+                  }
+                  
+                  await fetch(`${BASE_URL}/admin/products/${id}/variants/${dbVariant.id}`, {
+                      method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
+                      body: JSON.stringify(updatePayload), credentials: "include"
+                  });
+
+                  // آپدیت انبار
+                  if (dbVariant.inventory_item_id && stockLocationId) {
+                      await updateInventoryStandard(dbVariant.inventory_item_id, Number(v.inventory), stockLocationId);
+                  }
+                  
+                  // آپدیت قیمت حراج
+                  if (PRICE_LIST_ID && v.sale_price && Number(v.sale_price) > 0) {
+                      await fetch(`${BASE_URL}/admin/price-lists/${PRICE_LIST_ID}/prices/batch`, {
+                          method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
+                          body: JSON.stringify({
+                              create: [{ variant_id: dbVariant.id, amount: Number(v.sale_price), currency_code: "irr" }]
+                          }),
+                          credentials: "include"
+                      });
+                  }
+              }
           }
       }
+            const existingVariants = variants.filter(v => !v.id?.startsWith("NEW_"));
+      // آپدیت قیمت‌های پایه و موجودی برای واریانت‌های قدیمی
+      for (const v of existingVariants) {
+          const variantPayload: any = {
+              sku: v.sku || null,
+              origin_country: "IR",
+              weight: v.weight ? Number(v.weight) : null
+          };
 
-      const existingVariants = variants.filter(v => !v.id?.startsWith("NEW_"));
-      await Promise.all(existingVariants.map(async (v) => {
-         await fetch(`${BASE_URL}/admin/products/${id}/variants/${v.id}`, {
-            method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
-            body: JSON.stringify({ sku: v.sku || null, prices: [{ amount: Number(v.price), currency_code: "irr" }], origin_country: "IR" }),
-            credentials: "include"
-         });
-         if (v.inventory_item_id && stockLocationId) {
-             await updateInventoryWithRetry(v.inventory_item_id, Number(v.inventory), stockLocationId);
-         }
-      }));
-      
-      toast.success("تغییرات ذخیره شد");
-      router.refresh();
-    } catch (error: any) {
-      console.error(error); toast.error("خطایی رخ داد.");
-    } finally { setSaving(false); }
-  };
+          if (v.price_id) {
+              variantPayload.prices = [{ id: v.price_id, amount: Number(v.price), currency_code: "irr" }];
+          } else {
+              variantPayload.prices = [{ amount: Number(v.price), currency_code: "irr" }];
+          }
 
-  const updateInventoryWithRetry = async (inventoryItemId: string, quantity: number, locationId: string, attempts = 3) => {
-      for (let i = 0; i < attempts; i++) {
-          try {
-              const res = await fetch(`${BASE_URL}/admin/inventory-items/${inventoryItemId}/location-levels/${locationId}`, {
-                  method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
-                  body: JSON.stringify({ stocked_quantity: quantity }),
-                  credentials: "include"
-              });
-              if (res.status === 404) {
-                  await fetch(`${BASE_URL}/admin/inventory-items/${inventoryItemId}/location-levels`, {
+          const varRes = await fetch(`${BASE_URL}/admin/products/${id}/variants/${v.id}`, {
+              method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
+              body: JSON.stringify(variantPayload),
+              credentials: "include"
+          });
+
+          if (!varRes.ok) {
+              throw new Error(`خطا در آپدیت اطلاعات واریانت: ${v.title}`);
+          }
+
+          if (PRICE_LIST_ID) {
+              const parsedSale = Number(v.sale_price);
+
+              if (parsedSale && parsedSale > 0) {
+                  const batchPayload: any = {
+                      create: [{ variant_id: v.id, amount: parsedSale, currency_code: "irr" }]
+                  };
+                  if (v.sale_price_id) batchPayload.delete = [v.sale_price_id];
+
+                  await fetch(`${BASE_URL}/admin/price-lists/${PRICE_LIST_ID}/prices/batch`, {
                       method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
-                      body: JSON.stringify({ location_id: locationId, stocked_quantity: quantity }),
+                      body: JSON.stringify(batchPayload),
+                      credentials: "include"
+                  });
+              } 
+              else if (v.sale_price_id) {
+                  await fetch(`${BASE_URL}/admin/price-lists/${PRICE_LIST_ID}/prices/batch`, {
+                      method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
+                      body: JSON.stringify({ delete: [v.sale_price_id] }),
                       credentials: "include"
                   });
               }
-              if (res.ok || res.status === 404) return;
-              await new Promise(r => setTimeout(r, 1000));
-          } catch (e) { console.error(e); }
+          }
+
+          // استفاده از تابع استاندارد برای آپدیت‌های معمولی
+          if (v.inventory_item_id && stockLocationId) {
+             await updateInventoryStandard(v.inventory_item_id, Number(v.inventory), stockLocationId);
+          }
       }
+      // آپدیت قیمت‌های پایه و موجودی برای واریانت‌های قدیمی
+      for (const v of existingVariants) {
+          const variantPayload: any = {
+              sku: v.sku || null,
+              origin_country: "IR",
+              weight: v.weight ? Number(v.weight) : null
+          };
+
+          if (v.price_id) {
+              variantPayload.prices = [{ id: v.price_id, amount: Number(v.price), currency_code: "irr" }];
+          } else {
+              variantPayload.prices = [{ amount: Number(v.price), currency_code: "irr" }];
+          }
+
+          const varRes = await fetch(`${BASE_URL}/admin/products/${id}/variants/${v.id}`, {
+              method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
+              body: JSON.stringify(variantPayload),
+              credentials: "include"
+          });
+
+          if (!varRes.ok) {
+              throw new Error(`خطا در آپدیت اطلاعات واریانت: ${v.title}`);
+          }
+
+          // آپدیت تخفیف‌ها با حذف آیدی قدیمی (ارواح) و جایگزینی آن
+          if (PRICE_LIST_ID) {
+              const parsedSale = Number(v.sale_price);
+
+              if (parsedSale && parsedSale > 0) {
+                  const batchPayload: any = {
+                      create: [{ variant_id: v.id, amount: parsedSale, currency_code: "irr" }]
+                  };
+                  if (v.sale_price_id) batchPayload.delete = [v.sale_price_id];
+
+                  await fetch(`${BASE_URL}/admin/price-lists/${PRICE_LIST_ID}/prices/batch`, {
+                      method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
+                      body: JSON.stringify(batchPayload),
+                      credentials: "include"
+                  });
+              } 
+              else if (v.sale_price_id) {
+                  await fetch(`${BASE_URL}/admin/price-lists/${PRICE_LIST_ID}/prices/batch`, {
+                      method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
+                      body: JSON.stringify({ delete: [v.sale_price_id] }),
+                      credentials: "include"
+                  });
+              }
+          }
+
+          if (v.inventory_item_id && stockLocationId) {
+   await updateInventoryStandard(v.inventory_item_id, Number(v.inventory), stockLocationId);
+}
+      }
+
+      toast.success("تغییرات با موفقیت ذخیره شد");
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+
+    } catch (error: any) {
+      console.error(error); 
+      toast.error(error.message || "خطایی رخ داد.");
+    } finally { setSaving(false); }
+  };
+
+  // --- New, Standard Inventory Updater ---
+  const updateInventoryStandard = async (inventoryItemId: string, quantity: number, locationId: string) => {
+    try {
+        // Step 1: Link Inventory Item to Location (Creates Location Level)
+        const linkRes = await fetch(`${BASE_URL}/admin/inventory-items/${inventoryItemId}/location-levels`, {
+            method: "POST", 
+            headers: { "Content-Type": "application/json", ...authHeaders },
+            body: JSON.stringify({ location_id: locationId }), 
+            credentials: "include"
+        });
+        
+        // If it's 400 with 'already exists', that's fine. If other errors, log them.
+        if (!linkRes.ok && linkRes.status !== 400) {
+            console.warn("Issue linking location level, might already exist.", await linkRes.text());
+        }
+
+        // Step 2: Update the Stocked Quantity
+        const updateRes = await fetch(`${BASE_URL}/admin/inventory-items/${inventoryItemId}/location-levels/${locationId}`, {
+            method: "POST", 
+            headers: { "Content-Type": "application/json", ...authHeaders },
+            body: JSON.stringify({ stocked_quantity: quantity }), 
+            credentials: "include"
+        });
+
+        if (!updateRes.ok) {
+            console.error("Failed to update inventory quantity:", await updateRes.text());
+        }
+    } catch (e) {
+        console.error("Error in updateInventoryStandard:", e);
+    }
   };
 
   const handleUploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -318,9 +571,7 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
       const tId = toast.loading("در حال آپلود...");
       try {
         const res = await fetch(`${BASE_URL}/admin/uploads`, {
-            method: "POST",
-            body: formData,
-            headers: { "Authorization": `Bearer ${token}` }
+            method: "POST", body: formData, headers: { "Authorization": `Bearer ${token}` }
         });
         if (!res.ok) throw new Error("خطا در آپلود");
         const data = await res.json();
@@ -330,29 +581,58 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
       } catch (err: any) { toast.dismiss(tId); toast.error(err.message || "خطا در آپلود تصویر"); }
     }
   };
+  
   const removeImage = (url: string) => setImages(prev => prev.filter(img => img.url !== url));
   const setAsThumbnail = (url: string) => setImages(prev => prev.map(img => ({ ...img, isThumbnail: img.url === url })));
 
+  // هندل کردن دکمه حذف متغیر با مدیریت هوشمند خطای دیتابیس
   const handleDeleteVariant = async (variantId: string) => {
-      if (!confirm("حذف شود؟")) return;
-      if (variantId.startsWith("NEW_")) { setVariants(prev => prev.filter(v => v.id !== variantId)); return; }
-      try {
-          const res = await fetch(`${BASE_URL}/admin/products/${id}/variants/${variantId}`, { method: "DELETE", headers: authHeaders });
-          if (res.ok) setVariants(prev => prev.filter(v => v.id !== variantId));
-      } catch (e) { toast.error("حذف ناموفق"); }
+    // اگر متغیر هنوز در دیتابیس ذخیره نشده و فقط در UI است (آیدی موقت دارد)
+    if (variantId.startsWith("NEW_")) {
+      setVariants(variants.filter((v) => v.id !== variantId));
+      return;
+    }
+
+    const confirmDelete = window.confirm("آیا از حذف این متغیر اطمینان دارید؟");
+    if (!confirmDelete) return;
+
+    try {
+      const res = await fetch(`${BASE_URL}/admin/products/${id}/variants/${variantId}`, {
+        method: "DELETE",
+        headers: authHeaders,
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        // اگر مدوسا خطای 400 داد، یعنی متغیر قفل شده است
+        if (res.status === 400) {
+          toast.error(
+            "این متغیر در سبد خرید مشتریان است یا سابقه سفارش دارد و قابل حذف نیست! راهکار: نام و قیمت آن را به یکی از متغیرهای جدید تغییر دهید (بازیافت متغیر).",
+            { duration: 6000 }
+          );
+        } else {
+          toast.error("خطا در حذف متغیر. لطفاً دوباره تلاش کنید.");
+        }
+        return;
+      }
+
+      toast.success("متغیر با موفقیت حذف شد");
+      
+      // آپدیت کردن لیست متغیرها در UI بدون نیاز به رفرش کل صفحه
+      setVariants(variants.filter((v) => v.id !== variantId));
+      
+    } catch (error) {
+      console.error("Error deleting variant:", error);
+      toast.error("خطای شبکه در ارتباط با سرور.");
+    }
   };
 
   if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
   const isSimpleProduct = productOptions.length === 1 && productOptions[0].title === "Default Option";
 
   return (
-      <form onSubmit={handleUpdate} className="max-w-7xl mx-auto pb-20 px-4 md:px-8 relative">
-        {/* ... (کدهای JSX فرم دقیقاً مثل قبل است - کپی کنید) ... */}
-        {/* فقط برای کوتاه شدن پاسخ، JSX طولانی را اینجا تکرار نکردم چون تغییری نکرده است. 
-            شما کل return (...) فایل قبلی خود را اینجا کپی کنید. 
-            تمام عملکردها حالا از `authHeaders` استفاده می‌کنند. 
-        */}
-        <div className="flex items-center justify-between mb-6 sticky top-4 z-20 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+    <form onSubmit={handleUpdate} className="max-w-7xl mx-auto pb-20 px-4 md:px-8 relative">
+      <div className="flex items-center justify-between mb-6 sticky top-4 z-20 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
         <div className="flex items-center gap-4">
           <Link href="/dashboard/products"><Button variant="ghost" size="icon"><ChevronRight className="h-5 w-5 text-gray-500" /></Button></Link>
           <h1 className="text-xl font-bold text-gray-900">ویرایش محصول <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded ml-2 text-gray-500">{handle}</span></h1>
@@ -397,14 +677,14 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
             {showVariantGenerator && (
                 <div className="bg-blue-50 p-5 rounded-xl border border-blue-100 mb-6 animate-in fade-in slide-in-from-top-2">
                     <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-bold text-blue-900 flex items-center gap-2"><Layers className="w-4 h-4" /> تولید خودکار واریانت‌ها</h3>
+                        <h3 className="font-bold text-blue-900 flex items-center gap-2"><Layers className="w-4 h-4" /> تولید خودکار واریانتها</h3>
                         <Button size="icon" variant="ghost" className="h-6 w-6 text-blue-400 hover:text-blue-700" onClick={() => setShowVariantGenerator(false)}><X className="w-4 h-4" /></Button>
                     </div>
-                    
+                     
                     {isSimpleProduct && (
                         <div className="flex items-center gap-2 text-xs text-orange-600 bg-orange-100 p-2 rounded mb-4 border border-orange-200">
                             <AlertTriangle className="w-4 h-4" />
-                            توجه: با ذخیره واریانت‌های جدید، حالت "محصول ساده" و قیمت قبلی جایگزین می‌شود.
+                            توجه: با ذخیره واریانتهای جدید، حالت "محصول ساده" و قیمت قبلی جایگزین میشود.
                         </div>
                     )}
 
@@ -426,7 +706,7 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
                             </div>
                         ))}
                     </div>
-                    <Button type="button" onClick={generateVariants} className="w-full bg-blue-600 hover:bg-blue-700 text-white h-9 text-xs">تولید لیست واریانت‌ها</Button>
+                    <Button type="button" onClick={generateVariants} className="w-full bg-blue-600 hover:bg-blue-700 text-white h-9 text-xs">تولید لیست واریانتها</Button>
                 </div>
             )}
 
@@ -435,14 +715,21 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
             ) : (
                <div className="space-y-3">
                   {variants.map((v, idx) => (
-                     <div key={v.id || idx} className={`flex gap-3 items-end p-4 rounded-xl border hover:border-gray-300 transition-colors ${v.id?.startsWith("NEW_") ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-100"}`}>
-                        <div className="flex-1">
+                     <div key={v.id || idx} className={`flex gap-3 items-end p-4 rounded-xl border hover:border-gray-300 transition-colors flex-wrap ${v.id?.startsWith("NEW_") ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-100"}`}>
+                        <div className="flex-1 min-w-[200px]">
                             <label className="text-xs font-medium text-gray-500 mb-1 block">عنوان</label>
                             <div className="h-9 flex items-center px-3 font-medium text-sm text-gray-700 bg-white rounded border border-gray-200">{v.title}</div>
                         </div>
-                        <div className="w-32"><label className="text-xs font-medium text-gray-500 mb-1 block">قیمت</label><Input type="number" value={v.price} onChange={(e) => { const newV = [...variants]; newV[idx].price = e.target.value; setVariants(newV); }} className="bg-white" /></div>
-                        <div className="w-24"><label className="text-xs font-medium text-gray-500 mb-1 block">موجودی</label><Input type="number" value={v.inventory} onChange={(e) => { const newV = [...variants]; newV[idx].inventory = e.target.value; setVariants(newV); }} className="bg-white" /></div>
-                        <Button type="button" variant="ghost" size="icon" onClick={() => handleDeleteVariant(v.id || `NEW_${idx}`)} className="text-gray-400 hover:text-red-500 hover:bg-red-50"><Trash2 className="h-4 w-4" /></Button>
+                        <div className="w-36 flex flex-col gap-1">
+                            <label className="text-xs font-medium text-gray-500 block">قیمت / تخفیف (ریال)</label>
+                            <Input type="number" placeholder="اصلی" value={v.price} onChange={(e) => { const newV = [...variants]; newV[idx].price = e.target.value; setVariants(newV); }} className="bg-white h-8 text-xs" />
+                            <Input type="number" placeholder="با تخفیف" value={v.sale_price || ""} onChange={(e) => { const newV = [...variants]; newV[idx].sale_price = e.target.value; setVariants(newV); }} className="bg-white h-8 text-xs border-red-200 placeholder:text-red-300" />
+                        </div>
+                        <div className="w-24"><label className="text-xs font-medium text-gray-500 mb-1 block">موجودی</label><Input type="number" value={v.inventory} onChange={(e) => { const newV = [...variants]; newV[idx].inventory = e.target.value; setVariants(newV); }} className="bg-white h-8 text-xs" /></div>
+                         
+                        <div className="w-24"><label className="text-xs font-medium text-gray-500 mb-1 block">وزن (گرم)</label><Input type="number" value={v.weight} onChange={(e) => { const newV = [...variants]; newV[idx].weight = e.target.value; setVariants(newV); }} className="bg-white h-8 text-xs" placeholder="مثلا 500" /></div>
+                         
+                        <Button type="button" variant="ghost" size="icon" onClick={() => handleDeleteVariant(v.id || `NEW_${idx}`)} className="text-gray-400 hover:text-red-500 hover:bg-red-50 mb-0.5"><Trash2 className="h-4 w-4" /></Button>
                      </div>
                   ))}
                </div>
@@ -467,16 +754,25 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
                 ))}
              </div>
           </div>
+
+          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-5">
+            <h2 className="font-bold text-lg text-gray-800 border-b pb-3">محصولات مرتبط</h2>
+            <RelatedProductSelector
+              selectedIds={relatedIds}
+              onChange={setRelatedIds}
+              adminToken={token}
+            />
+          </div>
         </div>
 
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
-            <h2 className="font-bold text-lg text-gray-800 border-b pb-3">دسته‌بندی</h2>
-             <CategorySelector 
-    selectedIds={selectedCategories} 
-    onChange={setSelectedCategories} 
-    token={token} 
-/>
+            <h2 className="font-bold text-lg text-gray-800 border-b pb-3">دستهبندی</h2>
+             <CategorySelector
+                selectedIds={selectedCategories}
+                onChange={setSelectedCategories}
+                token={token}
+            />
           </div>
 
           <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
@@ -520,6 +816,6 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
           </div>
         </div>
       </div>
-      </form>
+    </form>
   );
 }

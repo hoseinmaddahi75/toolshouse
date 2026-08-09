@@ -1,4 +1,3 @@
-// src/components/admin/create-product-form.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -10,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { 
   ChevronRight, Plus, Loader2, ImagePlus, Trash2, 
-  DollarSign, Box, Layers, RefreshCw, TableProperties, Ruler, AlertTriangle 
+  DollarSign, Box, Layers, RefreshCw, TableProperties, Ruler, AlertTriangle, Scale 
 } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -19,10 +18,11 @@ import CategorySelector from "@/components/admin/category-selector";
 import RichTextEditor from "@/components/admin/rich-text-editor";
 import { toast } from "sonner";
 import { MEDUSA_BACKEND_URL } from "@/lib/constants";
+import RelatedProductSelector from "@/components/admin/RelatedProductSelector"
 
 // --- تایپ‌ها ---
 type GlobalAttribute = { id: string; title: string; values: { id: string; value: string }[]; };
-type GeneratedVariant = { id: string; title: string; sku: string; price: string; inventory: string; options: Record<string, string>; };
+type GeneratedVariant = { id: string; title: string; sku: string; price: string; inventory: string; weight: string; options: Record<string, string>; };
 type SpecTemplate = { id: string; title: string; fields: string[] };
 type SizeGuide = { id: string; title: string; image_url: string };
 
@@ -31,15 +31,14 @@ const sanitizeHandle = (text: string) => {
   return text.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-").replace(/^-+|-+$/g, "");
 };
 
+
 export default function CreateProductForm({ token }: { token: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [fetchingDefaults, setFetchingDefaults] = useState(true);
   const BASE_URL = MEDUSA_BACKEND_URL;
 
-  const authHeaders = {
-    "Authorization": `Bearer ${token}`
-  };
+  const authHeaders = { "Authorization": `Bearer ${token}` };
 
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
@@ -48,6 +47,7 @@ export default function CreateProductForm({ token }: { token: string }) {
   const [fullDescription, setFullDescription] = useState("");
   const [images, setImages] = useState<{url: string, isThumbnail: boolean}[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [relatedIds, setRelatedIds] = useState<string[]>([]);
   
   const [defaultSalesChannelId, setDefaultSalesChannelId] = useState("");
   const [defaultShippingProfileId, setDefaultShippingProfileId] = useState("");
@@ -65,8 +65,11 @@ export default function CreateProductForm({ token }: { token: string }) {
   const [variants, setVariants] = useState<GeneratedVariant[]>([]);
 
   const [simplePrice, setSimplePrice] = useState("");
+  const [simpleSalePrice, setSimpleSalePrice] = useState("");
   const [simpleInventory, setSimpleInventory] = useState("");
   const [simpleSku, setSimpleSku] = useState("");
+  const [simpleWeight, setSimpleWeight] = useState(""); 
+  
 
   useEffect(() => {
     const fetchData = async () => {
@@ -143,7 +146,7 @@ export default function CreateProductForm({ token }: { token: string }) {
           const optionTitle = attrTitles[index]; variantOptions[optionTitle] = val; titleParts.push(val);
         });
         return {
-          id: `gen_${Date.now()}_${idx}`, title: titleParts.join(" / "), sku: "", price: "0", inventory: "0", options: variantOptions
+          id: `gen_${Date.now()}_${idx}`, title: titleParts.join(" / "), sku: "", price: "0", inventory: "0", weight: "", options: variantOptions
         };
     });
     setVariants(newVariants);
@@ -182,6 +185,7 @@ export default function CreateProductForm({ token }: { token: string }) {
     e.preventDefault();
     if (!title) return toast.error("نام محصول الزامی است");
     if (productType === "simple" && !simplePrice) return toast.error("قیمت محصول ساده الزامی است");
+    if (productType === "simple" && simpleSalePrice && Number(simpleSalePrice) >= Number(simplePrice)) return toast.error("قیمت با تخفیف باید کمتر از قیمت اصلی باشد");
     if (productType === "variable" && variants.length === 0) return toast.error("برای محصول متغیر حداقل یک واریانت لازم است");
     if (productType === "variable" && variants.some(v => !v.price || Number(v.price) <= 0)) return toast.error("تمام واریانت‌ها باید قیمت داشته باشند");
     
@@ -197,6 +201,7 @@ export default function CreateProductForm({ token }: { token: string }) {
           if (selectedGuide) { metadata.size_guide_id = selectedSizeGuideId; metadata.size_guide_url = selectedGuide.image_url; }
       }
       if (selectedSpecId) { metadata.spec_template_id = selectedSpecId; metadata.specifications = specValues; }
+      if (relatedIds.length > 0) { metadata.related_product_ids = relatedIds; }
 
       let payload: any = {
         title, subtitle, handle: finalHandle, description,
@@ -204,6 +209,10 @@ export default function CreateProductForm({ token }: { token: string }) {
         images: images.map(img => ({ url: img.url })),
         categories: selectedCategories.map(id => ({ id })),
         status: "published", discountable: true, origin_country: "IR",
+        
+        // 💡 ثبت وزن کلی محصول در هنگام ساخت
+        weight: productType === "simple" && simpleWeight ? Number(simpleWeight) : (variants.length > 0 && variants[0].weight ? Number(variants[0].weight) : null),
+
         sales_channels: defaultSalesChannelId ? [{ id: defaultSalesChannelId }] : undefined,
         shipping_profile_id: defaultShippingProfileId || undefined,
         metadata: metadata 
@@ -214,7 +223,8 @@ export default function CreateProductForm({ token }: { token: string }) {
         payload.variants = [{
           title: "Default Variant", sku: simpleSku || null, manage_inventory: true, allow_backorder: false,
           prices: [{ amount: Number(simplePrice), currency_code: "irr" }],
-          options: { "Default Option": "Default Value" }, origin_country: "IR"
+          options: { "Default Option": "Default Value" }, origin_country: "IR",
+          weight: simpleWeight ? Number(simpleWeight) : null
         }];
       } else {
         const usedOptionTitles = Object.keys(selectedAttrs);
@@ -222,7 +232,8 @@ export default function CreateProductForm({ token }: { token: string }) {
         payload.variants = variants.map(v => ({
             title: v.title, sku: v.sku || null, manage_inventory: true, allow_backorder: false,
             prices: [{ amount: Number(v.price), currency_code: "irr" }],
-            options: v.options, origin_country: "IR"
+            options: v.options, origin_country: "IR",
+            weight: v.weight ? Number(v.weight) : null
         }));
       }
 
@@ -273,7 +284,33 @@ export default function CreateProductForm({ token }: { token: string }) {
           });
           await Promise.all(updatePromises);
       }
-      
+
+      // 💡 ثبت قیمت با تخفیف (در صورت وارد کردن) برای واریانت پیش‌فرض محصول ساده
+      if (productType === "simple" && simpleSalePrice && Number(simpleSalePrice) > 0) {
+          const PRICE_LIST_ID = process.env.NEXT_PUBLIC_GLOBAL_SALE_PRICE_LIST_ID;
+          const defaultVariantId = freshProduct?.variants?.[0]?.id;
+
+          if (!PRICE_LIST_ID) {
+              toast.warning("محصول ساخته شد ولی شناسه لیست تخفیف تنظیم نشده — قیمت تخفیف ثبت نشد.");
+          } else if (!defaultVariantId) {
+              toast.warning("محصول ساخته شد ولی واریانت پیش‌فرض پیدا نشد — قیمت تخفیف ثبت نشد.");
+          } else {
+              try {
+                  const saleRes = await fetch(`${BASE_URL}/admin/price-lists/${PRICE_LIST_ID}/prices/batch`, {
+                      method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
+                      body: JSON.stringify({
+                          create: [{ variant_id: defaultVariantId, amount: Number(simpleSalePrice), currency_code: "irr" }]
+                      }),
+                      credentials: "include"
+                  });
+                  if (!saleRes.ok) throw new Error("ثبت قیمت تخفیف ناموفق بود");
+              } catch (saleError) {
+                  console.error(saleError);
+                  toast.warning("محصول ساخته شد ولی ثبت قیمت با تخفیف با خطا مواجه شد. از صفحه ویرایش دوباره امتحان کنید.");
+              }
+          }
+      }
+
       toast.success("محصول با موفقیت ساخته شد!");
       router.push(`/dashboard/products/${productId}/edit`);
 
@@ -286,7 +323,6 @@ export default function CreateProductForm({ token }: { token: string }) {
 
   return (
     <form onSubmit={handleCreate} className="max-w-7xl mx-auto pb-20 px-4 md:px-8">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6 sticky top-4 z-20 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
         <div className="flex items-center gap-4">
           <Link href="/dashboard/products" className="p-2 hover:bg-gray-100 rounded-full transition-colors border border-transparent hover:border-gray-200">
@@ -310,10 +346,8 @@ export default function CreateProductForm({ token }: { token: string }) {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         
-        {/* Main Column */}
         <div className="xl:col-span-2 space-y-6">
           
-          {/* 1. Basic Info */}
           <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-5">
             <h2 className="font-bold text-lg text-gray-800 border-b pb-3">اطلاعات پایه</h2>
             <div className="space-y-4">
@@ -338,7 +372,6 @@ export default function CreateProductForm({ token }: { token: string }) {
             </div>
           </div>
 
-          {/* 2. Full Description */}
           <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-5">
              <h2 className="font-bold text-lg text-gray-800 border-b pb-3">نقد و بررسی (توضیحات کامل)</h2>
              <div className="min-h-[250px]">
@@ -346,7 +379,6 @@ export default function CreateProductForm({ token }: { token: string }) {
              </div>
           </div>
 
-          {/* 3. Variants Logic */}
           <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-6">
             <div className="flex items-center justify-between border-b pb-4">
                 <h2 className="font-bold text-lg text-gray-800">قیمت و متغیرها</h2>
@@ -364,11 +396,21 @@ export default function CreateProductForm({ token }: { token: string }) {
                         <DollarSign className="absolute left-2 top-8 w-4 h-4 text-gray-400" />
                     </div>
                     <div className="relative">
+                        <label className="text-xs font-medium text-gray-500 mb-1 block">قیمت با تخفیف (اختیاری)</label>
+                        <Input type="number" value={simpleSalePrice} onChange={e => setSimpleSalePrice(e.target.value)} className="pl-8 border-red-200 focus-visible:ring-red-500" placeholder="در صورت عدم تخفیف خالی بگذارید" />
+                        <DollarSign className="absolute left-2 top-8 w-4 h-4 text-red-300" />
+                    </div>
+                    <div className="relative">
                         <label className="text-xs font-medium text-gray-500 mb-1 block">موجودی انبار</label>
                         <Input type="number" value={simpleInventory} onChange={e => setSimpleInventory(e.target.value)} className="pl-8" placeholder="0" />
                         <Box className="absolute left-2 top-8 w-4 h-4 text-gray-400" />
                     </div>
-                    <div className="md:col-span-2">
+                    <div className="relative">
+                        <label className="text-xs font-medium text-gray-500 mb-1 block">وزن (گرم)</label>
+                        <Input type="number" value={simpleWeight} onChange={e => setSimpleWeight(e.target.value)} className="pl-8" placeholder="500" />
+                        <Scale className="absolute left-2 top-8 w-4 h-4 text-gray-400" />
+                    </div>
+                    <div className="relative">
                         <label className="text-xs font-medium text-gray-500 mb-1 block">SKU</label>
                         <Input value={simpleSku} onChange={e => setSimpleSku(e.target.value)} className="font-mono text-xs" />
                     </div>
@@ -416,9 +458,10 @@ export default function CreateProductForm({ token }: { token: string }) {
                                     <thead className="bg-gray-50 text-gray-500 sticky top-0 z-10 text-xs uppercase">
                                         <tr>
                                             <th className="px-4 py-3">ترکیب</th>
-                                            <th className="px-4 py-3 w-32">قیمت</th>
-                                            <th className="px-4 py-3 w-24">موجودی</th>
-                                            <th className="px-4 py-3 w-32">SKU</th>
+                                            <th className="px-4 py-3 w-28">قیمت</th>
+                                            <th className="px-4 py-3 w-20">موجودی</th>
+                                            <th className="px-4 py-3 w-20">وزن(g)</th>
+                                            <th className="px-4 py-3 w-28">SKU</th>
                                             <th className="px-4 py-3 w-10"></th>
                                         </tr>
                                     </thead>
@@ -434,6 +477,7 @@ export default function CreateProductForm({ token }: { token: string }) {
                                                 </td>
                                                 <td className="px-4 py-2"><Input type="number" className="h-8 text-xs" placeholder="0" value={v.price} onChange={(e) => updateVariantField(v.id, "price", e.target.value)} /></td>
                                                 <td className="px-4 py-2"><Input type="number" className="h-8 text-xs" placeholder="0" value={v.inventory} onChange={(e) => updateVariantField(v.id, "inventory", e.target.value)} /></td>
+                                                <td className="px-4 py-2"><Input type="number" className="h-8 text-xs" placeholder="500" value={v.weight} onChange={(e) => updateVariantField(v.id, "weight", e.target.value)} /></td>
                                                 <td className="px-4 py-2"><Input className="h-8 text-xs font-mono" placeholder="Auto" value={v.sku} onChange={(e) => updateVariantField(v.id, "sku", e.target.value)} /></td>
                                                 <td className="px-4 py-2 text-center">
                                                     <Button size="icon" variant="ghost" className="h-7 w-7 text-gray-300 hover:text-red-500" onClick={() => removeVariant(v.id)}><Trash2 className="w-4 h-4" /></Button>
@@ -449,7 +493,6 @@ export default function CreateProductForm({ token }: { token: string }) {
             )}
           </div>
 
-          {/* 4. Images */}
           <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-5">
              <h2 className="font-bold text-lg text-gray-800 border-b pb-3">تصاویر محصول</h2>
              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -470,17 +513,25 @@ export default function CreateProductForm({ token }: { token: string }) {
                 </label>
              </div>
           </div>
+
+          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-5">
+            <h2 className="font-bold text-lg text-gray-800 border-b pb-3">محصولات مرتبط</h2>
+            <RelatedProductSelector
+              selectedIds={relatedIds}
+              onChange={setRelatedIds}
+              adminToken={token}
+            />
+          </div>
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
             <h2 className="font-bold text-lg text-gray-800 border-b pb-3">دسته‌بندی‌ها</h2>
              <CategorySelector 
-    selectedIds={selectedCategories} 
-    onChange={setSelectedCategories} 
-    token={token} 
-/>
+                selectedIds={selectedCategories} 
+                onChange={setSelectedCategories} 
+                token={token} 
+            />
           </div>
 
           <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">

@@ -9,13 +9,9 @@ export async function DELETE(req: MedusaRequest, res: MedusaResponse) {
   try {
     const customerModule = req.scope.resolve("customer") as any;
     
-    // استفاده از سرویس داخلی
     if (customerModule.customerAddressService_) {
-        // متد delete معمولاً روی سرویس‌های داخلی وجود دارد
-        await customerModule.customerAddressService_.delete(addressId);
-    } else {
-        // فال‌بک به متدهای ماژول
-        await customerModule.deleteAddresses([addressId]);
+        // 💡 در سرویس‌های داخلی، ID را درون آرایه پاس می‌دهیم
+        await customerModule.customerAddressService_.delete([addressId]);
     }
 
     return res.json({ success: true });
@@ -35,8 +31,9 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
   try {
     const customerModule = req.scope.resolve("customer") as any;
 
+    // 💡 دقت کن که id رو داخل خود دیتا قرار دادیم
     const payload = {
-        id: addressId,
+        id: addressId, 
         first_name: body.first_name,
         last_name: body.last_name,
         phone: body.phone,
@@ -48,11 +45,8 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     };
 
     if (customerModule.customerAddressService_) {
-        // متد update روی سرویس داخلی
-        await customerModule.customerAddressService_.update(addressId, payload);
-    } else {
-        // فال‌بک
-        await customerModule.updateAddresses([payload]);
+        // 💡 نکته طلایی: فقط یک پارامتر (به شکل آرایه) پاس می‌دهیم
+        await customerModule.customerAddressService_.update([payload]);
     }
 
     return res.json({ success: true });

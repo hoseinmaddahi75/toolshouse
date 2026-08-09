@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useEffect } from "react"; // 👈 اضافه شد
+import { useState, useEffect } from "react";
 import { 
   LayoutDashboard, 
   ShoppingBag, 
@@ -16,6 +16,7 @@ import {
   TableProperties,
   MessageSquareQuote,
   ChevronLeft,
+  BarChart3,
   ChevronDown
 } from "lucide-react";
 import { SwatchIcon } from "@heroicons/react/24/outline";
@@ -23,13 +24,12 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
-// تعریف تایپ برای آیتم‌های منو
 type MenuItem = {
   title: string;
   href: string;
   icon: any;
   exact?: boolean;
-  children?: { title: string; href: string }[]; // 👈 قابلیت زیرمنو
+  children?: { title: string; href: string }[];
 };
 
 export default function AdminSidebar() {
@@ -81,6 +81,12 @@ export default function AdminSidebar() {
       title: "مشتریان",
       href: "/dashboard/customers",
       icon: Users,
+      exact: false,
+    },
+    {
+      title: "گزارش ها",
+      href: "/dashboard/reports",
+      icon: BarChart3,
       exact: false,
     },
     {

@@ -121,24 +121,48 @@ export default function ProductInfo({ product }: ProductInfoProps) {
   };
 
   // ------------------------------------------------------------------
-  // بخش قیمت
+  // استخراج هوشمند قیمت اصلی و تخفیف‌خورده (سازگار کامل با Medusa v2)
   // ------------------------------------------------------------------
-  
-  const getVariantPriceObj = (variant: any) => {
-    if (!variant?.prices) return null;
-    const irrPrice = variant.prices.find((p: any) => p.currency_code === "irr");
-    return irrPrice || variant.prices[0];
-  };
+  const targetVariant = selectedVariant || product.variants[0];
+const calcObj = targetVariant?.calculated_price;
 
-  const priceObj = selectedVariant 
-    ? getVariantPriceObj(selectedVariant) 
-    : (product.variants && product.variants.length > 0 ? getVariantPriceObj(product.variants[0]) : null);
-  
-  const displayPrice = priceObj 
-    ? formatPrice(priceObj.amount, priceObj.currency_code) 
-    : "---";
-  
-  // ------------------------------------------------------------------
+  let calculatedAmount: number | null = null;
+  let originalAmount: number | null = null;
+  const currencyCode = "irr";
+
+  if (targetVariant) {
+    // ۱. استخراج قیمت محاسبه‌شده (قیمت تخفیف‌خورده)
+    if (targetVariant.calculated_price && typeof targetVariant.calculated_price === "object") {
+      calculatedAmount = targetVariant.calculated_price.calculated_amount ?? null;
+      originalAmount = targetVariant.calculated_price.original_amount ?? null;
+    } else if (typeof targetVariant.calculated_price === "number") {
+      calculatedAmount = targetVariant.calculated_price;
+    }
+
+    // ۲. استخراج قیمت پایه (اصلی) از variant.prices به عنوان فال‌بک
+    const basePrices = targetVariant.prices || targetVariant.price_set?.prices || [];
+    const irrBasePrice = basePrices.find((p: any) => p.currency_code?.toLowerCase() === "irr");
+    const baseAmount = irrBasePrice?.amount ?? null;
+
+    // اگر قیمت اصلی پیدا نشد یا با قیمت تخفیف‌خورده یکی بود، از قیمت پایه استفاده می‌کنیم
+    if (baseAmount !== null) {
+      if (!originalAmount || originalAmount <= (calculatedAmount || 0)) {
+        if (calculatedAmount !== null && baseAmount > calculatedAmount) {
+          originalAmount = baseAmount;
+        }
+      }
+    }
+
+    // اگر کلاً calculatedAmount نداشتیم، همان قیمت پایه را قرار می‌دهیم
+    if (calculatedAmount === null && baseAmount !== null) {
+      calculatedAmount = baseAmount;
+    }
+  }
+
+  // شرط وجود تخفیف: قیمت اصلی موجود باشد و از قیمت محاسبه‌شده بزرگتر باشد
+  const hasDiscount = originalAmount !== null && calculatedAmount !== null && originalAmount > calculatedAmount;
+
+
 
   const handleShare = async () => {
     const url = window.location.href;
@@ -198,15 +222,22 @@ export default function ProductInfo({ product }: ProductInfoProps) {
           </div>
         </div>
 
-        {/* قیمت */}
-        <div className="flex items-center gap-4">
-          <p className="text-3xl font-bold text-black" style={{ fontFamily: "var(--font-sans)" }}>
-            {displayPrice}
-          </p>
-          {currentStock === 0 && (
-            <span className="text-sm text-red-500 font-bold bg-red-50 px-2 py-1 rounded">ناموجود</span>
-          )}
-        </div>
+        <div className="flex flex-col gap-1 my-4">
+  {hasDiscount ? (
+  <div className="flex items-center gap-3">
+    <span className="line-through text-gray-400 text-sm">
+      {formatPrice(originalAmount, "irr")}
+    </span>
+    <span className="text-red-600 font-bold text-2xl">
+      {formatPrice(calculatedAmount, "irr")}
+    </span>
+  </div>
+) : (
+  <span className="text-gray-900 font-bold text-2xl">
+    {calculatedAmount ? formatPrice(calculatedAmount, "irr") : "---"}
+  </span>
+)}
+</div>
         
         {/* موبایل اکشن */}
         <div className="flex md:hidden items-center gap-3 pt-2">

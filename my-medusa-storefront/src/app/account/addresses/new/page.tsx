@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronRight, Loader2, Save, MapPin } from "lucide-react";
 import Link from "next/link";
-// دقت کنید: مسیر اکشن را درست بدهید (اگر actions.ts در پوشه parent است)
 import { addAddressAction } from "../actions"; 
 import { toast } from "sonner";
 import { useEffect } from "react";
+
+// 💡 ایمپورت سلکتور استان و شهر تاپین
+import TapinProvinceCitySelector from "@/components/checkout/TapinProvinceCitySelector";
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -78,15 +80,12 @@ export default function NewAddressPage() {
               </div>
             </div>
 
+            {/* 💡 جایگزینی استان و شهر با کامپوننت هوشمند */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">استان <span className="text-red-500">*</span></label>
-                <input required name="province" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">شهر <span className="text-red-500">*</span></label>
-                <input required name="city" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black" />
-              </div>
+              <TapinProvinceCitySelector 
+                 provinceFieldName="province"
+                 cityFieldName="city"
+              />
             </div>
 
             <div className="space-y-2">

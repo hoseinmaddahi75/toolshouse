@@ -21,6 +21,7 @@ const mapMedusaProductToType = (medusaProduct: any) => {
         ? [
             { 
               amount: v.calculated_price.calculated_amount, 
+              original_amount: v.calculated_price.original_amount,
               currency_code: v.calculated_price.currency_code 
             },
             ...(v.prices || []) // قیمت‌های خام را هم نگه دار

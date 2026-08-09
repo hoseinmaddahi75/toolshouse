@@ -3,54 +3,6 @@
 import { getMedusaHeaders, BACKEND_URL } from "@/lib/medusa-client";
 import { getAuthDataFromCookie } from "@/lib/auth";
 
-export async function ensureCartOwnership(cartId: string) {
-  const headers = await getHeadersWithAuth();
-  const customerId = headers["x-customer-id"]; // این از کوکی لاگین می‌آید
-
-  // اگر کاربر لاگین نیست، کاری نداریم (خرید مهمان)
-  if (!customerId) return { linked: false };
-
-  try {
-    // ۱. دریافت اطلاعات سبد خرید فعلی
-    const cartRes = await fetch(`${BACKEND_URL}/store/carts/${cartId}`, {
-      headers: headers,
-      cache: "no-store",
-    });
-    
-    if (!cartRes.ok) return { linked: false };
-    
-    const { cart } = await cartRes.json();
-
-    // ۲. بررسی: آیا سبد خرید همین الان به این کاربر وصل است؟
-    if (cart.customer_id === customerId) {
-        return { linked: true, status: "already_linked" };
-    }
-
-    // ۳. اگر وصل نیست، وصلش کن (Update Cart)
-    // این استانداردترین روش مدوسا برای "Claim" کردن سبد خرید است
-    const updateRes = await fetch(`${BACKEND_URL}/store/carts/${cartId}`, {
-      method: "POST",
-      headers: headers,
-      body: JSON.stringify({
-        customer_id: customerId,
-        email: cart.email // ایمیل را هم نگه می‌داریم
-      }),
-      cache: "no-store",
-    });
-
-    if (updateRes.ok) {
-        console.log(`✅ Cart ${cartId} claimed by customer ${customerId}`);
-        return { linked: true, status: "just_linked" };
-    }
-
-  } catch (error) {
-    console.error("Cart Ownership Error:", error);
-  }
-
-  return { linked: false };
-}
-
-
 // --- تابعی برای ساخت هدرهای اختصاصی ---
 async function getHeadersWithAuth() {
   const baseHeaders = getMedusaHeaders();
@@ -72,15 +24,54 @@ async function getHeadersWithAuth() {
   return headers;
 }
 
-// ۱. دریافت مشتری + آدرس‌ها (نسخه ترکیبی و تضمینی)
+export async function ensureCartOwnership(cartId: string) {
+  const headers = await getHeadersWithAuth();
+  const customerId = headers["x-customer-id"]; 
+
+  if (!customerId) return { linked: false };
+
+  try {
+    const cartRes = await fetch(`${BACKEND_URL}/store/carts/${cartId}`, {
+      headers: headers,
+      cache: "no-store",
+    });
+    
+    if (!cartRes.ok) return { linked: false };
+    
+    const { cart } = await cartRes.json();
+
+    if (cart.customer_id === customerId) {
+        return { linked: true, status: "already_linked" };
+    }
+
+    const updateRes = await fetch(`${BACKEND_URL}/store/carts/${cartId}`, {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify({
+        customer_id: customerId,
+        email: cart.email 
+      }),
+      cache: "no-store",
+    });
+
+    if (updateRes.ok) {
+        console.log(`✅ Cart ${cartId} claimed by customer ${customerId}`);
+        return { linked: true, status: "just_linked" };
+    }
+
+  } catch (error) {
+    console.error("Cart Ownership Error:", error);
+  }
+
+  return { linked: false };
+}
+
 export async function getCurrentCustomerAction() {
   try {
     const headers = await getHeadersWithAuth();
     
-    // اگر کاربر لاگین نیست، نل برگردان
     if (!headers["x-customer-id"]) return null;
 
-    // الف) دریافت آدرس‌ها از API اختصاصی (چون می‌دانیم این ۱۰۰٪ کار می‌کند)
     const addressRes = await fetch(`${BACKEND_URL}/store/custom-addresses`, {
       headers: headers,
       cache: "no-store",
@@ -92,8 +83,6 @@ export async function getCurrentCustomerAction() {
         addresses = addrData.addresses || [];
     }
 
-    // ب) تلاش برای دریافت ایمیل و مشخصات (اختیاری)
-    // اگر این بخش فیل شود، حداقل آدرس‌ها را داریم
     let customerData: any = {
         id: headers["x-customer-id"],
         email: "",
@@ -102,7 +91,6 @@ export async function getCurrentCustomerAction() {
     };
 
     try {
-        // تلاش برای گرفتن پروفایل (ممکن است 401 بدهد، مهم نیست)
         const profileRes = await fetch(`${BACKEND_URL}/store/customers/me`, {
              headers: headers, 
              cache: "no-store" 
@@ -113,14 +101,11 @@ export async function getCurrentCustomerAction() {
                 customerData = { ...customerData, ...profileData.customer };
             }
         }
-    } catch (e) {
-        // ایگنور کردن خطای پروفایل
-    }
+    } catch (e) {}
 
-    // ج) ترکیب اطلاعات: پروفایل + آدرس‌های اختصاصی
     return {
         ...customerData,
-        addresses: addresses // 👈 این بخش مهم است: آدرس‌های سالم را جایگزین می‌کنیم
+        addresses: addresses 
     };
 
   } catch (e) {
@@ -129,7 +114,6 @@ export async function getCurrentCustomerAction() {
   }
 }
 
-// ۲. آپدیت آدرس سبد خرید
 export async function updateCartAddressAction(cartId: string, address: any, email: string) {
   try {
     const headers = await getHeadersWithAuth();
@@ -147,7 +131,7 @@ export async function updateCartAddressAction(cartId: string, address: any, emai
             postal_code: address.postal_code,
             phone: address.phone,
             company: address.company,
-            province: address.province, // اگر فیلد استان دارید
+            province: address.province, 
         },
         email: email,
       }),
@@ -164,7 +148,6 @@ export async function updateCartAddressAction(cartId: string, address: any, emai
   }
 }
 
-// ۳. دریافت روش‌های ارسال
 export async function retrieveShippingOptions(cartId: string) {
   try {
     const headers = await getHeadersWithAuth();
@@ -181,13 +164,11 @@ export async function retrieveShippingOptions(cartId: string) {
   }
 }
 
-// ۴. ثبت روش ارسال و آماده‌سازی پرداخت (نسخه نهایی و متصل‌کننده)
+// 🟢 مسیر موفقیت‌آمیز شما برای ساخت درگاه
 export async function setShippingMethodAction(cartId: string, shippingOptionId: string) {
   try {
     const headers = await getHeadersWithAuth();
     
-    // 🟢 گام حیاتی جدید: اتصال سبد به مشتری قبل از پرداخت
-    // اگر کاربر لاگین است (id دارد)، سبد را به نام او بزن
     if (headers["x-customer-id"]) {
         try {
             await fetch(`${BACKEND_URL}/store/carts/${cartId}`, {
@@ -199,13 +180,9 @@ export async function setShippingMethodAction(cartId: string, shippingOptionId: 
                 cache: "no-store",
             });
             console.log("✅ Cart successfully linked to customer:", headers["x-customer-id"]);
-        } catch (linkError) {
-            console.error("⚠️ Failed to link cart to customer:", linkError);
-            // اینجا ارور را نادیده می‌گیریم تا پروسه خرید متوقف نشود، ولی لاگ می‌کنیم
-        }
+        } catch (linkError) {}
     }
 
-    // ادامه روال قبلی...
     const res = await fetch(`${BACKEND_URL}/store/custom-checkout/init`, {
       method: "POST",
       headers: headers,
@@ -230,7 +207,6 @@ export async function setShippingMethodAction(cartId: string, shippingOptionId: 
   }
 }
 
-// ۶. انتخاب درگاه (برای تغییر دستی درگاه)
 export async function setPaymentSessionAction(cartId: string, providerId: string, collectionId: string) {
   try {
     const headers = await getHeadersWithAuth();
@@ -246,100 +222,60 @@ export async function setPaymentSessionAction(cartId: string, providerId: string
   }
 }
 
-
-// ۷. اعمال کد تخفیف به سبد خرید (روش استاندارد Medusa v2)
-export async function applyPromotionAction(cartId: string, code: string) {
+// 🔴 توابع ضروری اضافه‌شده جهت رفع کرش فرانت‌اند
+export async function updateItemQuantityAction(cartId: string, lineId: string, quantity: number) {
+  const headers = await getHeadersWithAuth();
   try {
-    const headers = await getHeadersWithAuth();
-    
-    // 💡 در مدوسا v2، پروموشن‌ها مستقیماً با آپدیت کردن خود سبد خرید اعمال می‌شوند
-    const res = await fetch(`${BACKEND_URL}/store/carts/${cartId}/promotions`, {
-      method: "POST",
-      headers: headers,
-      body: JSON.stringify({ 
-        promo_codes: [code] 
-      }),
-      cache: "no-store",
-    });
-
-    const data = await res.json();
-    
-    console.log("🎟️ MEDUSA CART UPDATE WITH PROMO:", JSON.stringify(data, null, 2));
-
-    if (!res.ok) {
-      throw new Error(data.message || "کد تخفیف نامعتبر یا منقضی شده است.");
+    let res;
+    if (quantity <= 0) {
+      res = await fetch(`${BACKEND_URL}/store/carts/${cartId}/line-items/${lineId}`, {
+        method: "DELETE",
+        headers,
+      });
+    } else {
+      res = await fetch(`${BACKEND_URL}/store/carts/${cartId}/line-items/${lineId}`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ quantity }),
+      });
     }
-    
+
+    if (!res.ok) return { success: false, message: await res.text() };
+    const data = await res.json();
     return { success: true, cart: data.cart };
-  } catch (e: any) {
-    return { success: false, error: e.message };
+  } catch (error: any) {
+    return { success: false, message: "خطای شبکه" };
   }
 }
 
-// ۸. حذف کد تخفیف از سبد خرید
-export async function removePromotionAction(cartId: string, code: string) {
+export async function applyPromotionAction(cartId: string, promoCode: string) {
+  const headers = await getHeadersWithAuth();
   try {
-    const headers = await getHeadersWithAuth();
-    
-    // برای حذف هم از همان ساختار آپدیت سبد خرید استفاده می‌کنیم (ارسال آرایه خالی یا کدهای باقیمانده)
-    // یا روش استاندارد حذف پروموشن در مدوسا v2
     const res = await fetch(`${BACKEND_URL}/store/carts/${cartId}/promotions`, {
       method: "POST",
-      headers: headers,
-      body: JSON.stringify({ 
-        promo_codes: [] // پاک کردن کدهای تخفیف
-      }),
-      cache: "no-store",
-    });
-
-    if (!res.ok) {
-      throw new Error("خطا در حذف کد تخفیف");
-    }
-    
-    const data = await res.json();
-    return { success: true, cart: data.cart };
-  } catch (e: any) {
-    return { success: false, error: e.message };
-  }
-}
-
-
-// 🐞 تابع دیباگر عمیق برای کشف دلیل اعمال نشدن تخفیف
-export async function runDeepDiagnostic(cartId: string, promoCode: string) {
-  try {
-    console.log(`\n\n======================================================`);
-    console.log(`🔍 STARTING DEEP DIAGNOSTIC FOR PROMO: ${promoCode}`);
-    console.log(`======================================================`);
-
-    // برای دیباگ، یک توکن ادمین نیاز داریم (اگر توی کوکی هست که عالیه، اگر نه باید توکن ادمین رو داشته باشیم)
-    // اما برای اینکه وابسته به لاگین ادمین نباشیم، از API استور با کلید پابلیش استفاده میکنیم
-    const headers = await getHeadersWithAuth();
-
-    // 1. اول تلاش میکنیم تخفیف رو مستقیما به سبد بزنیم و خروجی خام بک‌اند رو ببینیم
-    const applyRes = await fetch(`${BACKEND_URL}/store/carts/${cartId}/promotions`, {
-      method: "POST",
-      headers: headers,
+      headers,
       body: JSON.stringify({ promo_codes: [promoCode] }),
-      cache: "no-store",
     });
-    
-    const applyData = await applyRes.json();
-    console.log(`\n🛒 1. RAW APPLY RESPONSE:`, JSON.stringify(applyData, null, 2));
+    if (!res.ok) return { success: false, error: "کد تخفیف نامعتبر" };
+    const data = await res.json();
+    return { success: true, cart: data.cart };
+  } catch (e) {
+    return { success: false, error: "خطا در ارتباط" };
+  }
+}
 
-    // 2. حالا کل دیتای سبد خرید رو با تمام روابط (Relations) از بک‌اند می‌گیریم
-    const cartRes = await fetch(`${BACKEND_URL}/store/carts/${cartId}?fields=*promotions,*items,*region`, {
-      method: "GET",
-      headers: headers,
-      cache: "no-store",
+export async function removePromotionAction(cartId: string, promoCode: string) {
+  const headers = await getHeadersWithAuth();
+  try {
+    const res = await fetch(`${BACKEND_URL}/store/carts/${cartId}/promotions`, {
+      method: "DELETE",
+      headers,
+      body: JSON.stringify({ promo_codes: [promoCode] }),
     });
-    const cartData = await cartRes.json();
-    console.log(`\n📦 2. CART RELATIONS (PROMOTIONS):`, JSON.stringify(cartData.cart?.promotions, null, 2));
-    console.log(`📦 3. CART ITEMS:`, JSON.stringify(cartData.cart?.items, null, 2));
-
-    console.log(`======================================================\n\n`);
-    
-    return { success: true };
-  } catch (e: any) {
-    console.error("DIAGNOSTIC ERROR:", e.message);
+    if (!res.ok) return { success: false, error: "خطا در حذف کد تخفیف" };
+    const data = await res.json();
+    return { success: true, cart: data.cart };
+  } catch (e) {
+    return { success: false, error: "خطا در ارتباط" };
   }
 }

@@ -61,9 +61,26 @@ export default async function Footer() {
               />
             </div>
             
-            <p className="text-gray-400 text-sm leading-7 mb-8 text-justify">
+            <p className="text-gray-400 text-sm leading-7 mb-6 text-justify">
               فروشگاه اینترنتی ابزار فروشی حسینی، ارائه دهنده بهترین ابزار آلات صنعتی و ساختمانی با کیفیت عالی و قیمت مناسب.
             </p>
+
+            {/* 🟢 بخش لوگو اینماد با پس‌زمینه سفید و گوشه‌های گرد */}
+            <div className="mb-8 inline-block bg-white p-3 rounded-2xl shadow-md">
+              <a 
+                href="https://trustseal.enamad.ir/?id=350184&code=wXNriS4hYx0J5CiauLUf" 
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
+                <Image 
+                  src={`${MEDUSA_BACKEND_URL}/static/enamad-full-star.png`}
+                  alt="اینماد" 
+                  width={90} 
+                  height={90}
+                  className="object-contain"
+                />
+              </a>
+            </div>
 
             <form className="flex flex-col gap-3">
               <label className="text-xs text-gray-500">برای دریافت آخرین اخبار عضو شوید:</label>
@@ -195,8 +212,6 @@ export default async function Footer() {
             </a>
           </p>
           
-          
-          
           {/* آیکون شبکه‌های اجتماعی */}
           <div className="flex items-center gap-4 flex-wrap justify-center">
             
@@ -221,11 +236,15 @@ export default async function Footer() {
               </svg>
             </Link>
 
-            {/* روبیکا (لوگوی اختصاصی) */}
+            {/* 🟢 روبیکا (اصلاح شده با تصویر دلخواه) */}
             <Link href="https://rubika.ir/toolshouse" className="opacity-60 hover:opacity-100 transition-opacity hover:-translate-y-1 duration-300" target="_blank" rel="nofollow" title="روبیکا">
-              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12.001 0a12 12 0 1 0 12 12 12 12 0 0 0-12-12zm4.183 16.518h-2.176v-3.738a1.218 1.218 0 0 0-1.222-1.216h-.936v4.954h-2.178V7.481h3.114a3.398 3.398 0 0 1 3.4 3.394 3.414 3.414 0 0 1-1.272 2.646c.801.597 1.27 1.517 1.27 2.502zm-4.334-6.853h-.936v2.308h.936a1.155 1.155 0 0 0 1.161-1.151 1.158 1.158 0 0 0-1.161-1.157z"/>
-              </svg>
+              <Image 
+                src={`${MEDUSA_BACKEND_URL}/static/minimal-gray@2x.png`}
+                alt="روبیکا" 
+                width={24} 
+                height={24} 
+                className="w-6 h-6 object-contain rounded-md"
+              />
             </Link>
 
             {/* پیگیری سفارش (تلگرام با متن) */}
