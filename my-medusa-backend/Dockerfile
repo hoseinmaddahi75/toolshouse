@@ -1,14 +1,14 @@
-# Multi-stage Dockerfile for Medusa Backend
+# Multi-stage Dockerfile for Medusa Backend (NPM version)
 # Stage 1: Build the application
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
 # Copy package files first for better caching
-COPY package.json yarn.lock ./
+COPY package.json package-lock.json ./
 
-# Install dependencies
-RUN yarn install --frozen-lockfile
+# Install dependencies using npm with legacy-peer-deps for safety
+RUN npm install --legacy-peer-deps
 
 # Copy all source files
 COPY . .
@@ -24,7 +24,7 @@ WORKDIR /app
 
 # Copy mandatory files
 COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/yarn.lock ./yarn.lock
+COPY --from=builder /app/package-lock.json ./package-lock.json
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/medusa-config.ts ./medusa-config.ts
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
@@ -49,4 +49,4 @@ ENV PORT=9000
 
 EXPOSE 9000
 
-CMD ["yarn", "start"]
+CMD ["npm", "run", "start"]
