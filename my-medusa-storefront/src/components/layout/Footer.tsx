@@ -66,21 +66,22 @@ export default async function Footer() {
             </p>
 
             {/* 🟢 بخش لوگو اینماد با پس‌زمینه سفید و گوشه‌های گرد */}
-            <div className="mb-8 inline-block bg-white p-3 rounded-2xl shadow-md">
-              <a 
-                href="https://trustseal.enamad.ir/?id=350184&code=wXNriS4hYx0J5CiauLUf" 
-                target="_blank" 
-                rel="noopener noreferrer"
-              >
-                <Image 
-                  src={`${MEDUSA_BACKEND_URL}/static/enamad-full-star.png`}
-                  alt="اینماد" 
-                  width={90} 
-                  height={90}
-                  className="object-contain"
-                />
-              </a>
-            </div>
+<div className="mb-8 inline-block bg-white p-3 rounded-2xl shadow-md">
+  <a 
+    referrerPolicy="origin" 
+    target="_blank" 
+    href="https://trustseal.enamad.ir/?id=350184&Code=wXNriS4hYx0J5CiauLUf"
+    rel="noopener noreferrer"
+  >
+    <img 
+      referrerPolicy="origin" 
+      src="https://trustseal.enamad.ir/logo.aspx?id=350184&Code=wXNriS4hYx0J5CiauLUf" 
+      alt="اینماد" 
+      style={{ cursor: 'pointer' }} 
+      className="object-contain w-[90px] h-[90px]"
+    />
+  </a>
+</div>
 
             <form className="flex flex-col gap-3">
               <label className="text-xs text-gray-500">برای دریافت آخرین اخبار عضو شوید:</label>
