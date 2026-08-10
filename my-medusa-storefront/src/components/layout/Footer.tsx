@@ -109,27 +109,7 @@ export default async function Footer() {
                 <ListItem href="/terms">قوانین و مقررات</ListItem>
                 <ListItem href="/privacy">حریم خصوصی</ListItem>
                 <ListItem href="/faq">سوالات متداول</ListItem>
-                <ListItem href="/track-order">پیگیری سفارش</ListItem>
-              </ul>
-            </div>
-
-            {/* ستون ۳ */}
-            <div>
-              <Heading text="محصولات" />
-              <ul className="space-y-2">
-                {categories.length > 0 ? (
-                  categories.map((cat: any) => (
-                    <ListItem key={cat.id} href={`/category/${cat.handle}`}>
-                      {cat.name}
-                    </ListItem>
-                  ))
-                ) : (
-                  <>
-                    <ListItem href="/store">ابزار برقی</ListItem>
-                    <ListItem href="/store">ابزار شارژی</ListItem>
-                    <ListItem href="/store">ابزار دستی</ListItem>
-                  </>
-                )}
+                <ListItem href="/account/orders">پیگیری سفارش</ListItem>
               </ul>
             </div>
 
@@ -139,12 +119,11 @@ export default async function Footer() {
               <ul className="space-y-2">
                 <ListItem href="/contact">تماس با ما</ListItem>
                 <ListItem href="/about">درباره ما</ListItem>
-                <ListItem href="#">چت آنلاین</ListItem>
               </ul>
             </div>
 
             {/* ستون ۵ */}
-            <div className="lg:col-span-1 min-w-fit">
+            <div className="lg:col-span-2 min-w-fit">
               <Heading text="اطلاعات تماس" />
               <div className="space-y-6">
                 

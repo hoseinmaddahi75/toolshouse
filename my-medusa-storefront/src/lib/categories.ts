@@ -149,7 +149,6 @@ export const CATEGORIES: Category[] = [
       { name: "متر دستی", handle: "mtr-dsty-82" },
       { name: "تراز لیزری", handle: "traz-lyzry-84" },
       { name: "متر لیزری", handle: "mtr-lyzry-83" },
-      { name: "فوجی تکس", handle: "fwjy-tks-2748" },
     ],
   },
   {
