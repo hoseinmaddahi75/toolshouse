@@ -457,7 +457,7 @@ function CheckoutContent() {
                                         ) : (
                                             <span className="flex items-center gap-2">
                                                 <span className="text-sm text-gray-800">
-                                                    {postCost > 0 ? `${new Intl.NumberFormat("fa-IR").format(postCost)} تومان` : "محاسبه در مقصد"}
+                                                    {postCost > 0 ? `${new Intl.NumberFormat("fa-IR").format(postCost * 10)} ریال` : "محاسبه در مقصد"}
                                                 </span>
                                                 <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px]">پس‌کرایه</span>
                                             </span>
@@ -481,7 +481,7 @@ function CheckoutContent() {
                                         ) : (
                                             <span className="flex items-center gap-2">
                                                 <span className="text-sm text-gray-800">
-                                                    {tipaxCost > 0 ? `${new Intl.NumberFormat("fa-IR").format(tipaxCost)} تومان` : "ناموجود برای این شهر"}
+                                                    {tipaxCost > 0 ? `${new Intl.NumberFormat("fa-IR").format(tipaxCost * 10)} ریال` : "ناموجود برای این شهر"}
                                                 </span>
                                                 <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded text-[10px]">پس‌کرایه</span>
                                             </span>
@@ -601,15 +601,15 @@ function CheckoutContent() {
 
                     <div className="flex justify-between text-gray-600">
                         <span>جمع کل کالاها</span>
-                        <span>{subtotalInToman > 0 ? `${new Intl.NumberFormat("fa-IR").format(subtotalInToman)} تومان` : "در حال محاسبه..."}</span>
+                        <span>{rawSubtotal > 0 ? `${new Intl.NumberFormat("fa-IR").format(rawSubtotal)} ریال` : "در حال محاسبه..."}</span>
                     </div>
 
-                    {discountInToman > 0 && (
-                        <div className="flex justify-between text-red-500 font-medium">
-                            <span>تخفیف اعمال شده</span>
-                            <span className="dir-ltr">- {new Intl.NumberFormat("fa-IR").format(discountInToman)} تومان</span>
-                        </div>
-                    )}
+                    {rawDiscount > 0 && (
+    <div className="flex justify-between text-red-500 font-medium">
+        <span>تخفیف اعمال شده</span>
+        <span className="dir-ltr">- {new Intl.NumberFormat("fa-IR").format(rawDiscount)} ریال</span>
+    </div>
+)}
 
                     {step > 1 && (
                         <div className="flex justify-between items-center text-sm mt-4 pb-4 border-b border-gray-100">
@@ -618,9 +618,9 @@ function CheckoutContent() {
                                 {isCalculatingShipping ? (
     <span className="flex items-center text-blue-500"><Loader2 className="w-3 h-3 animate-spin ml-1" /> در حال استعلام...</span>
 ) : selectedShipping === "tapin_post" ? (
-    <span className="text-sm text-gray-800">{postCost > 0 ? `${new Intl.NumberFormat("fa-IR").format(postCost)} تومان` : "محاسبه در مقصد"}</span>
+    <span className="text-sm text-gray-800">{postCost > 0 ? `${new Intl.NumberFormat("fa-IR").format(postCost * 10)} ریال` : "محاسبه در مقصد"}</span>
 ) : selectedShipping === "tapin_tipax" ? (
-    <span className="text-sm text-gray-800">{tipaxCost > 0 ? `${new Intl.NumberFormat("fa-IR").format(tipaxCost)} تومان` : "ناموجود برای این شهر"}</span>
+    <span className="text-sm text-gray-800">{tipaxCost > 0 ? `${new Intl.NumberFormat("fa-IR").format(tipaxCost * 10)} ریال` : "ناموجود برای این شهر"}</span>
 ) : selectedShipping === "peyk_motori" ? (
     <span className="text-sm text-gray-800">پس‌کرایه (پرداخت به پیک)</span>
 ) : (
@@ -636,8 +636,8 @@ function CheckoutContent() {
                     <div className="flex justify-between items-center text-lg font-bold mt-4 pt-2">
                       <span>مبلغ قابل پرداخت (آنلاین):</span>
                       <span className="text-blue-600">
-                        {grandTotalInToman > 0 ? `${new Intl.NumberFormat("fa-IR").format(grandTotalInToman)} تومان` : "---"}
-                      </span>
+  {(rawSubtotal - rawDiscount) > 0 ? `${new Intl.NumberFormat("fa-IR").format(Math.max(0, rawSubtotal - rawDiscount))} ریال` : "---"}
+</span>
                     </div>
                 </div>
              </div>

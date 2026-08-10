@@ -66,8 +66,8 @@ export default function CheckoutCartItems({ cart, onCartUpdate }: { cart: any, o
           const handle = item.product_handle || item.variant?.product?.handle || item.product?.handle;
           const productLink = handle ? `/products/${handle}` : "#";
           
-          // تبدیل قیمت ریال به تومان
-          const priceInToman = Math.round(item.unit_price / 10);
+          // استفاده مستقیم از قیمت واحد مدوسا (ریال)
+          const priceInRial = item.unit_price || 0;
 
           return (
             <div key={item.id} className="flex flex-col sm:flex-row gap-4 p-4 items-center relative hover:bg-gray-50/50 transition-colors">
@@ -104,8 +104,8 @@ export default function CheckoutCartItems({ cart, onCartUpdate }: { cart: any, o
                 )}
                 
                 <div className="mt-3 font-black text-blue-600 text-lg flex items-center gap-1">
-                  {new Intl.NumberFormat("fa-IR").format(priceInToman)}
-                  <span className="text-xs font-medium text-gray-500">تومان</span>
+                  {new Intl.NumberFormat("fa-IR").format(priceInRial)}
+                  <span className="text-xs font-medium text-gray-500">ریال</span>
                 </div>
               </div>
 

@@ -23,19 +23,21 @@ export function getMedusaHeaders(tags: string[] = []) {
 
 export const formatPrice = (amount: number | null | undefined, currencyCode: string = "irr") => {
   if (amount === null || amount === undefined) {
-    return "۰ تومان";
+    return "۰ ریال";
   }
 
   const code = currencyCode.toLowerCase();
 
   if (code === "irr" || code === "irt") {
-    const tomanAmount = code === "irr" ? Math.floor(amount / 10) : amount;
+
+    const rialAmount = code === "irt" ? amount * 10 : amount;
+    
     const formattedNumber = new Intl.NumberFormat("fa-IR", {
       style: "decimal",
       maximumFractionDigits: 0,
-    }).format(tomanAmount);
+    }).format(rialAmount);
 
-    return `${formattedNumber} تومان`;
+    return `${formattedNumber} ریال`;
   }
 
   return new Intl.NumberFormat("en-US", {
