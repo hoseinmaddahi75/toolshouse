@@ -15,6 +15,8 @@ COPY . .
 
 # Build the application (بک‌اند و ادمین ساخته می‌شوند)
 ENV NODE_ENV=production
+ARG NEXT_PUBLIC_GLOBAL_SALE_PRICE_LIST_ID
+ENV NEXT_PUBLIC_GLOBAL_SALE_PRICE_LIST_ID=$NEXT_PUBLIC_GLOBAL_SALE_PRICE_LIST_ID
 RUN npx medusa build
 
 # Stage 2: Create production image

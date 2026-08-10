@@ -38,7 +38,7 @@ jobs:
       - name: Build and push Frontend Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./my-medusa-storefront   # محدود کردن پردازش فقط به پوشه فرانت‌اند
+          context: ./my-medusa-storefront
           file: ./my-medusa-storefront/Dockerfile
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:latest,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/frontend:${{ github.sha }}
@@ -48,16 +48,19 @@ jobs:
             NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=pk_82b953b964ad71f051bb02d1382200901c260d0e8628f845fd00856125b14336
             NEXT_PUBLIC_MEDUSA_BACKEND_URL=https://api.toolshouse.ir
             NEXT_PUBLIC_BASE_URL=https://toolshouse.ir
+            NEXT_PUBLIC_GLOBAL_SALE_PRICE_LIST_ID=plist_01KZKW5S7AASJA59B8A1NP8DMH
 
       - name: Build and push Backend Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./my-medusa-backend      # محدود کردن پردازش فقط به پوشه بک‌اند
+          context: ./my-medusa-backend
           file: ./my-medusa-backend/Dockerfile
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend:latest,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/backend:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            NEXT_PUBLIC_GLOBAL_SALE_PRICE_LIST_ID=plist_01KZKW5S7AASJA59B8A1NP8DMH
 
       - name: Install SSH key
         uses: shimataro/ssh-key-action@v2
