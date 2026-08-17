@@ -1,6 +1,7 @@
 export interface Product {
   id: string;
   title: string;
+  subtitle?: string | null; // 🟢 اضافه شده برای جلوگیری از ارورهای تایپ‌اسکریپت در سئو
   handle: string;
   description: string | null;
   thumbnail: string | null;

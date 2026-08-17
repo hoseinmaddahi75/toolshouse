@@ -27,16 +27,62 @@ function cleanContent(content: string) {
   return cleaned;
 }
 
+// ----------------------------------------------------------------------
+// ۱. تولید متادیتا، اُپن‌گراف (Open Graph) و توییتر کارد برای مقاله (اضافه شده از داروبرگ)
+// ----------------------------------------------------------------------
 export async function generateMetadata(props: Props) {
   const params = await props.params;
   const post = await getPostBySlug(params.slug);
-  if (!post) return { title: "مطلب یافت نشد" };
+  
+  // 🟢 تغییر نام به مجله خانه ابزار
+  if (!post) return { title: "مطلب یافت نشد | مجله خانه ابزار" };
+
+  const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://khanehabzar.com";
+  const postUrl = `${baseUrl}/blog/${params.slug}`;
+  const ogImage = post.image || `${baseUrl}/images/default-blog-og.jpg`; 
+
+  // 🟢 تغییر نام به مجله خانه ابزار
+  const seoTitle = `${post.title} | مجله خانه ابزار`;
+
   return {
-    title: `${post.title} | مجله خانه ابزار`,
+    title: seoTitle,
     description: post.excerpt,
+    // تگ Canonical
+    alternates: {
+      canonical: postUrl,
+    },
+    // تگ‌های Open Graph ویژه مقالات
+    openGraph: {
+      title: seoTitle,
+      description: post.excerpt,
+      url: postUrl,
+      siteName: "خانه ابزار", // 🟢 تغییر به برند خانه ابزار
+      images: [
+        {
+          url: ogImage,
+          width: 1200, // سایز استاندارد لینکدین و فیسبوک برای مقالات
+          height: 630,
+          alt: post.title,
+        },
+      ],
+      locale: "fa_IR",
+      type: "article", // 👈 تغییر کلیدی نسبت به محصول: تایپ روی مقاله تنظیم شد
+      publishedTime: post.published_at, // زمان انتشار برای گوگل نیوز و شبکه‌های اجتماعی
+      authors: ["خانه ابزار"], // 🟢 تغییر به برند خانه ابزار
+    },
+    // تگ‌های Twitter
+    twitter: {
+      card: "summary_large_image",
+      title: seoTitle,
+      description: post.excerpt,
+      images: [ogImage],
+    },
   };
 }
 
+// ----------------------------------------------------------------------
+// ۲. صفحه اصلی مقاله و تولید خودکار اسکیما (BlogPosting JSON-LD)
+// ----------------------------------------------------------------------
 export default async function BlogPostPage(props: Props) {
   const params = await props.params;
 
@@ -61,8 +107,44 @@ export default async function BlogPostPage(props: Props) {
   const categoryTitle = getCategoryLabel(post.category);
   const cleanHTML = cleanContent(post.content);
 
+  // --- ساخت خودکار اسکیما برای مقاله (اضافه شده از داروبرگ) ---
+  const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://khanehabzar.com";
+  const postUrl = `${baseUrl}/blog/${params.slug}`;
+
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      "mainEntityOfPage": { "@type": "WebPage", "@id": postUrl },
+      "headline": post.title,
+      "description": post.excerpt,
+      "image": post.image ? [post.image] : [],
+      // 🟢 مقادیر نویسنده و ناشر به "خانه ابزار" تغییر یافت
+      "author": { "@type": "Organization", "name": "خانه ابزار", "url": baseUrl },
+      "publisher": { "@type": "Organization", "name": "خانه ابزار", "logo": { "@type": "ImageObject", "url": `${baseUrl}/images/logo.png` } },
+      "datePublished": post.published_at,
+      "dateModified": post.published_at 
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "صفحه اصلی", "item": baseUrl },
+        { "@type": "ListItem", "position": 2, "name": "وبلاگ", "item": `${baseUrl}/blog` },
+        { "@type": "ListItem", "position": 3, "name": post.title, "item": postUrl }
+      ]
+    }
+  ];
+
   return (
     <div className="bg-[#FAFAFA] min-h-screen pb-20 pt-10" dir="rtl">
+      
+      {/* 🟢 تزریق اسکیما پنهان در هدر صفحه */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       <div className="w-full px-4 lg:px-[5%] xl:px-[120px]">
         
         {/* Breadcrumb */}
@@ -121,13 +203,6 @@ export default async function BlogPostPage(props: Props) {
               />
 
               <div className="mt-12 pt-8 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-6">
-                <div className="flex items-center gap-3">
-                    <span className="font-bold text-sm">برچسب‌ها:</span>
-                    <div className="flex gap-2">
-                        <span className="text-xs bg-gray-50 border border-gray-200 px-3 py-1 rounded-full text-gray-600">مد</span>
-                        <span className="text-xs bg-gray-50 border border-gray-200 px-3 py-1 rounded-full text-gray-600">استایل</span>
-                    </div>
-                </div>
                 <ShareButton />
               </div>
 

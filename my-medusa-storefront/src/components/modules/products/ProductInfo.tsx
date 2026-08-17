@@ -15,7 +15,6 @@ interface ProductInfoProps {
 }
 
 export default function ProductInfo({ product }: ProductInfoProps) {
-  // اگر product.options نال بود، آرایه خالی بگذار
   const productOptions = product.options || [];
   
   const category = product.categories?.[0];
@@ -26,16 +25,12 @@ export default function ProductInfo({ product }: ProductInfoProps) {
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
 
-  // 1. مقداردهی اولیه (اصلاح شده)
   useEffect(() => {
-    // اگر محصول واریانت دارد اما آپشن ندارد (محصول ساده)، نیازی به ست کردن آپشن نیست
     if (product.variants?.length > 0 && productOptions.length > 0) {
       const defaultVariant = product.variants[0];
       const initialState: Record<string, string> = {};
       
       productOptions.forEach((opt: any, index: number) => {
-        // تلاش برای پیدا کردن مقدار آپشن در واریانت پیش‌فرض
-        // در مدوسا گاهی values آرایه است، گاهی options
         const variantOption = defaultVariant.options?.[index];
         
         if (variantOption) {
@@ -45,16 +40,13 @@ export default function ProductInfo({ product }: ProductInfoProps) {
       });
       setSelectedOptions(initialState);
     }
-  }, [product]); // وابستگی‌ها ساده شدند
+  }, [product]);
 
-  // 2. پیدا کردن واریانت نهایی (اصلاح حیاتی برای محصولات ساده)
   const selectedVariant = useMemo(() => {
-    // 🔴 اصلاح مهم: اگر محصول اصلا آپشن ندارد (محصول ساده)، همان واریانت اول را برگردان
     if (!productOptions || productOptions.length === 0) {
         return product.variants?.[0] || null;
     }
 
-    // اگر آپشن دارد اما هنوز انتخاب نشده
     if (Object.keys(selectedOptions).length === 0) return null;
 
     return product.variants.find((v: any) => {
@@ -68,10 +60,8 @@ export default function ProductInfo({ product }: ProductInfoProps) {
     });
   }, [selectedOptions, product.variants, productOptions]);
 
-  // 3. محاسبه موجودی دقیق
   const currentStock = useMemo(() => {
     if (!selectedVariant) {
-        // اگر هنوز واریانت انتخاب نشده اما محصول ساده است، موجودی کل را نده
         if (productOptions.length === 0 && product.variants?.length > 0) {
             return product.variants[0].inventory_quantity || 0;
         }
@@ -80,7 +70,6 @@ export default function ProductInfo({ product }: ProductInfoProps) {
     return selectedVariant.inventory_quantity || 0;
   }, [selectedVariant, product.variants, productOptions]);
 
-  // 4. کنترل سقف تعداد
   useEffect(() => {
     if (selectedVariant && quantity > currentStock) {
       setQuantity(Math.max(1, currentStock));
@@ -120,18 +109,14 @@ export default function ProductInfo({ product }: ProductInfoProps) {
     }
   };
 
-  // ------------------------------------------------------------------
-  // استخراج هوشمند قیمت اصلی و تخفیف‌خورده (سازگار کامل با Medusa v2)
-  // ------------------------------------------------------------------
   const targetVariant = selectedVariant || product.variants[0];
-const calcObj = targetVariant?.calculated_price;
+  const calcObj = targetVariant?.calculated_price;
 
   let calculatedAmount: number | null = null;
   let originalAmount: number | null = null;
   const currencyCode = "irr";
 
   if (targetVariant) {
-    // ۱. استخراج قیمت محاسبه‌شده (قیمت تخفیف‌خورده)
     if (targetVariant.calculated_price && typeof targetVariant.calculated_price === "object") {
       calculatedAmount = targetVariant.calculated_price.calculated_amount ?? null;
       originalAmount = targetVariant.calculated_price.original_amount ?? null;
@@ -139,12 +124,10 @@ const calcObj = targetVariant?.calculated_price;
       calculatedAmount = targetVariant.calculated_price;
     }
 
-    // ۲. استخراج قیمت پایه (اصلی) از variant.prices به عنوان فال‌بک
     const basePrices = targetVariant.prices || targetVariant.price_set?.prices || [];
     const irrBasePrice = basePrices.find((p: any) => p.currency_code?.toLowerCase() === "irr");
     const baseAmount = irrBasePrice?.amount ?? null;
 
-    // اگر قیمت اصلی پیدا نشد یا با قیمت تخفیف‌خورده یکی بود، از قیمت پایه استفاده می‌کنیم
     if (baseAmount !== null) {
       if (!originalAmount || originalAmount <= (calculatedAmount || 0)) {
         if (calculatedAmount !== null && baseAmount > calculatedAmount) {
@@ -153,16 +136,12 @@ const calcObj = targetVariant?.calculated_price;
       }
     }
 
-    // اگر کلاً calculatedAmount نداشتیم، همان قیمت پایه را قرار می‌دهیم
     if (calculatedAmount === null && baseAmount !== null) {
       calculatedAmount = baseAmount;
     }
   }
 
-  // شرط وجود تخفیف: قیمت اصلی موجود باشد و از قیمت محاسبه‌شده بزرگتر باشد
   const hasDiscount = originalAmount !== null && calculatedAmount !== null && originalAmount > calculatedAmount;
-
-
 
   const handleShare = async () => {
     const url = window.location.href;
@@ -189,10 +168,9 @@ const calcObj = targetVariant?.calculated_price;
   return (
     <div className="flex flex-col space-y-8">
       
-      {/* --- هدر محصول --- */}
       <div className="border-b border-gray-100 pb-6 space-y-4">
         {category && (
-          <div className="mb-[10px]"> {/* مارجین منفی برای نزدیک شدن به تیتر */}
+          <div className="mb-[10px]"> 
             <span className="text-xs font-medium text-gray-500">
               دسته بندی: {" "}
               <span className="text-black hover:text-[#B19276] transition-colors cursor-pointer">
@@ -223,23 +201,22 @@ const calcObj = targetVariant?.calculated_price;
         </div>
 
         <div className="flex flex-col gap-1 my-4">
-  {hasDiscount ? (
-  <div className="flex items-center gap-3">
-    <span className="line-through text-gray-400 text-sm">
-      {formatPrice(originalAmount, "irr")}
-    </span>
-    <span className="text-red-600 font-bold text-2xl">
-      {formatPrice(calculatedAmount, "irr")}
-    </span>
-  </div>
-) : (
-  <span className="text-gray-900 font-bold text-2xl">
-    {calculatedAmount ? formatPrice(calculatedAmount, "irr") : "---"}
-  </span>
-)}
-</div>
+          {hasDiscount ? (
+          <div className="flex items-center gap-3">
+            <span className="line-through text-gray-400 text-sm">
+              {formatPrice(originalAmount, "irr")}
+            </span>
+            <span className="text-red-600 font-bold text-2xl">
+              {formatPrice(calculatedAmount, "irr")}
+            </span>
+          </div>
+        ) : (
+          <span className="text-gray-900 font-bold text-2xl">
+            {calculatedAmount ? formatPrice(calculatedAmount, "irr") : "---"}
+          </span>
+        )}
+        </div>
         
-        {/* موبایل اکشن */}
         <div className="flex md:hidden items-center gap-3 pt-2">
              <button 
               onClick={handleShare}
@@ -255,16 +232,17 @@ const calcObj = targetVariant?.calculated_price;
 
       </div>
 
+      {/* 🟢 نمایش توضیحات خلاصه با سیستم پشتیبان (Fallback) */}
       <div 
         className="text-gray-600 leading-8 text-justify text-sm [&>p]:mb-2"
-        dangerouslySetInnerHTML={{ __html: product.description || "" }}
+        dangerouslySetInnerHTML={{ 
+          __html: product.subtitle || product.metadata?.seo_description || product.description || "" 
+        }}
       />
       
-      {/* انتخاب‌گرها - فقط اگر آپشن واقعی وجود داشته باشد */}
       {productOptions.length > 0 && (
         <div className="space-y-6">
             {productOptions.map((option: any) => {
-            // فیلتر کردن آپشن‌های دیفالت مدوسا که نباید نمایش داده شوند
             if (option.title === "Default Option") return null;
 
             return (
@@ -327,7 +305,6 @@ const calcObj = targetVariant?.calculated_price;
             {isAdding ? (
                <><Loader2 className="w-5 h-5 animate-spin" /> در حال افزودن...</>
             ) : !selectedVariant ? (
-               // اگر محصول ساده باشد، selectedVariant پر است، پس این پیام نمایش داده نمی‌شود
                "گزینه‌ها را انتخاب کنید"
             ) : currentStock === 0 ? (
                "موجود شد خبرم کن"

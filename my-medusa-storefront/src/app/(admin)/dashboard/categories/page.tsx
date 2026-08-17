@@ -8,7 +8,8 @@ import {
   TrashIcon,
   XMarkIcon,
   FolderIcon,
-  ChevronLeftIcon
+  ChevronLeftIcon,
+  ChevronRightIcon
 } from "@heroicons/react/24/outline";
 import {
   getCategoriesAction,
@@ -42,6 +43,10 @@ export default function CategoriesPage() {
   const [serverLoading, setServerLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   
+  // 🟢 استیت‌های مربوط به صفحه‌بندی اضافه شد
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // تعداد دسته‌بندی در هر صفحه
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   
@@ -88,6 +93,14 @@ export default function CategoriesPage() {
     };
     return buildTree(categories);
   }, [categories]);
+
+  // 🟢 محاسبه کل صفحات و داده‌های صفحه جاری اضافه شد
+  const totalPages = Math.ceil(organizedCategories.length / itemsPerPage) || 1;
+  
+  const paginatedCategories = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return organizedCategories.slice(start, start + itemsPerPage);
+  }, [organizedCategories, currentPage, itemsPerPage]);
 
   const openCreateModal = () => {
     setEditingId(null);
@@ -208,7 +221,8 @@ export default function CategoriesPage() {
                 </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-                {organizedCategories.map((cat) => (
+                {/* 🟢 به جای organizedCategories از paginatedCategories استفاده شد */}
+                {paginatedCategories.map((cat) => (
                     <tr key={cat.id} className="hover:bg-gray-50 transition-colors group">
                     <td className="p-4">
                         <div className="flex items-center" style={{ marginRight: `${cat.level * 24}px` }}>
@@ -268,6 +282,38 @@ export default function CategoriesPage() {
             </tbody>
             </table>
         </div>
+
+        {/* 🟢 بخش کنترل صفحه‌بندی (Pagination Controls) اضافه شد */}
+        {organizedCategories.length > 0 && (
+          <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 bg-white">
+            <div className="text-sm text-gray-500">
+              نمایش {(currentPage - 1) * itemsPerPage + 1} تا {Math.min(currentPage * itemsPerPage, organizedCategories.length)} از کل {organizedCategories.length} دسته‌بندی
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRightIcon className="w-4 h-4" />
+                قبلی
+              </button>
+
+              <span className="text-sm font-medium text-gray-700 px-2">
+                صفحه {currentPage} از {totalPages}
+              </span>
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                بعدی
+                <ChevronLeftIcon className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
         
         {categories.length === 0 && !loading && (
           <div className="p-16 text-center flex flex-col items-center justify-center text-gray-400">
@@ -307,6 +353,7 @@ export default function CategoriesPage() {
                   required
                   value={formData.name}
                   onChange={handleNameChange}
+                  // 🟢 placeholder خانه ابزار حفظ شد
                   placeholder="مثلاً: ابزار برقی"
                   className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:border-[#B19276] focus:ring-1 focus:ring-[#B19276] transition-all"
                   />
@@ -339,7 +386,7 @@ export default function CategoriesPage() {
                     {organizedCategories.map((cat) => (
                         cat.id !== editingId && (
                         <option key={cat.id} value={cat.id}>
-                            {" a0".repeat(cat.level * 4) + (cat.level > 0 ? "↳ " : "") + cat.name}
+                            {" a0".repeat(cat.level * 4) + (cat.level > 0 ? "↳ " : "") + cat.name}
                         </option>
                         )
                     ))}

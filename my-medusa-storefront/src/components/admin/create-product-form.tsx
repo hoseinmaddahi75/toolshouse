@@ -20,9 +20,17 @@ import { toast } from "sonner";
 import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 import RelatedProductSelector from "@/components/admin/RelatedProductSelector"
 
-// --- تایپ‌ها ---
 type GlobalAttribute = { id: string; title: string; values: { id: string; value: string }[]; };
-type GeneratedVariant = { id: string; title: string; sku: string; price: string; inventory: string; weight: string; options: Record<string, string>; };
+type GeneratedVariant = { 
+  id: string; 
+  title: string; 
+  sku: string; 
+  price: string; 
+  sale_price?: string; // اضافه شدن فیلد قیمت تخفیف
+  inventory: string; 
+  weight: string; 
+  options: Record<string, string>; 
+};
 type SpecTemplate = { id: string; title: string; fields: string[] };
 type SizeGuide = { id: string; title: string; image_url: string };
 
@@ -30,7 +38,6 @@ const sanitizeHandle = (text: string) => {
   if (!text) return "";
   return text.toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "").replace(/-+/g, "-").replace(/^-+|-+$/g, "");
 };
-
 
 export default function CreateProductForm({ token }: { token: string }) {
   const router = useRouter();
@@ -41,10 +48,12 @@ export default function CreateProductForm({ token }: { token: string }) {
   const authHeaders = { "Authorization": `Bearer ${token}` };
 
   const [title, setTitle] = useState("");
-  const [subtitle, setSubtitle] = useState("");
+  const [subtitle, setSubtitle] = useState(""); 
   const [handle, setHandle] = useState("");
-  const [description, setDescription] = useState("");
-  const [fullDescription, setFullDescription] = useState("");
+  const [description, setDescription] = useState(""); 
+  const [seoTitle, setSeoTitle] = useState("");
+  const [seoDescription, setSeoDescription] = useState("");
+
   const [images, setImages] = useState<{url: string, isThumbnail: boolean}[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [relatedIds, setRelatedIds] = useState<string[]>([]);
@@ -70,7 +79,6 @@ export default function CreateProductForm({ token }: { token: string }) {
   const [simpleSku, setSimpleSku] = useState("");
   const [simpleWeight, setSimpleWeight] = useState(""); 
   
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -146,16 +154,20 @@ export default function CreateProductForm({ token }: { token: string }) {
           const optionTitle = attrTitles[index]; variantOptions[optionTitle] = val; titleParts.push(val);
         });
         return {
-          id: `gen_${Date.now()}_${idx}`, title: titleParts.join(" / "), sku: "", price: "0", inventory: "0", weight: "", options: variantOptions
+          id: `gen_${Date.now()}_${idx}`, 
+          title: titleParts.join(" / "), 
+          sku: "", 
+          price: "0", 
+          sale_price: "", 
+          inventory: "0", 
+          weight: "", 
+          options: variantOptions
         };
     });
     setVariants(newVariants);
     toast.success(`${newVariants.length} متغیر تولید شد`);
   };
 
-  const updateVariantField = (id: string, field: keyof GeneratedVariant, value: string) => {
-    setVariants(prev => prev.map(v => v.id === id ? { ...v, [field]: value } : v));
-  };
   const removeVariant = (id: string) => { setVariants(prev => prev.filter(v => v.id !== id)); };
 
   const handleUploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -195,7 +207,19 @@ export default function CreateProductForm({ token }: { token: string }) {
       let finalHandle = handle ? sanitizeHandle(handle) : sanitizeHandle(title);
       if (!finalHandle || finalHandle.length < 1) finalHandle = `product-${Date.now()}`;
 
-      const metadata: any = { full_description: fullDescription };
+      const stripHtml = (html: string) => {
+          if (!html) return "";
+          return html.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
+      };
+
+      const finalSeoTitle = seoTitle.trim() || `${title} | داروبرگ`;
+      const finalSeoDesc = seoDescription.trim() || stripHtml(subtitle).substring(0, 160);
+
+      const metadata: any = {
+        seo_title: finalSeoTitle,
+        seo_description: finalSeoDesc
+      };
+      
       if (selectedSizeGuideId) {
           const selectedGuide = sizeGuides.find(g => g.id === selectedSizeGuideId);
           if (selectedGuide) { metadata.size_guide_id = selectedSizeGuideId; metadata.size_guide_url = selectedGuide.image_url; }
@@ -209,10 +233,7 @@ export default function CreateProductForm({ token }: { token: string }) {
         images: images.map(img => ({ url: img.url })),
         categories: selectedCategories.map(id => ({ id })),
         status: "published", discountable: true, origin_country: "IR",
-        
-        // 💡 ثبت وزن کلی محصول در هنگام ساخت
         weight: productType === "simple" && simpleWeight ? Number(simpleWeight) : (variants.length > 0 && variants[0].weight ? Number(variants[0].weight) : null),
-
         sales_channels: defaultSalesChannelId ? [{ id: defaultSalesChannelId }] : undefined,
         shipping_profile_id: defaultShippingProfileId || undefined,
         metadata: metadata 
@@ -255,12 +276,13 @@ export default function CreateProductForm({ token }: { token: string }) {
       
       const freshDetails = await fetch(`${BASE_URL}/admin/products/${productId}/details`, { headers: authHeaders, credentials: "include" });
       if (!freshDetails.ok) {
-          toast.success("محصول ساخته شد ولی به‌روزرسانی موجودی انجام نشد.");
+          toast.success("محصول ساخته شد ولی به‌روزرسانی موجودی و قیمت فروش انجام نشد.");
           router.push(`/dashboard/products/${productId}/edit`);
           return;
       }
       const { product: freshProduct } = await freshDetails.json();
 
+      // ۱. آپدیت انبار
       if (freshProduct?.variants?.length > 0) {
           const updatePromises = freshProduct.variants.map(async (rv: any) => {
               const invItemId = rv.inventory_item_id;
@@ -285,30 +307,44 @@ export default function CreateProductForm({ token }: { token: string }) {
           await Promise.all(updatePromises);
       }
 
-      // 💡 ثبت قیمت با تخفیف (در صورت وارد کردن) برای واریانت پیش‌فرض محصول ساده
-      if (productType === "simple" && simpleSalePrice && Number(simpleSalePrice) > 0) {
-          const PRICE_LIST_ID = process.env.NEXT_PUBLIC_GLOBAL_SALE_PRICE_LIST_ID;
-          const defaultVariantId = freshProduct?.variants?.[0]?.id;
+      // ۲. ثبت قیمت با تخفیف به صورت دسته‌جمعی (Batch) برای ساده و متغیر
+      const PRICE_LIST_ID = process.env.NEXT_PUBLIC_GLOBAL_SALE_PRICE_LIST_ID;
+      
+      if (PRICE_LIST_ID) {
+          const pricesToCreate: any[] = [];
+          
+          if (productType === "simple" && simpleSalePrice && Number(simpleSalePrice) > 0) {
+              const defaultVariantId = freshProduct?.variants?.[0]?.id;
+              if (defaultVariantId) {
+                  pricesToCreate.push({ variant_id: defaultVariantId, amount: Number(simpleSalePrice), currency_code: "irr" });
+              }
+          } else if (productType === "variable") {
+              variants.forEach(localV => {
+                  const parsedSale = Number(localV.sale_price);
+                  if (parsedSale > 0) {
+                      const dbVariant = freshProduct?.variants?.find((v: any) => v.title === localV.title);
+                      if (dbVariant) {
+                          pricesToCreate.push({ variant_id: dbVariant.id, amount: parsedSale, currency_code: "irr" });
+                      }
+                  }
+              });
+          }
 
-          if (!PRICE_LIST_ID) {
-              toast.warning("محصول ساخته شد ولی شناسه لیست تخفیف تنظیم نشده — قیمت تخفیف ثبت نشد.");
-          } else if (!defaultVariantId) {
-              toast.warning("محصول ساخته شد ولی واریانت پیش‌فرض پیدا نشد — قیمت تخفیف ثبت نشد.");
-          } else {
+          if (pricesToCreate.length > 0) {
               try {
                   const saleRes = await fetch(`${BASE_URL}/admin/price-lists/${PRICE_LIST_ID}/prices/batch`, {
                       method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
-                      body: JSON.stringify({
-                          create: [{ variant_id: defaultVariantId, amount: Number(simpleSalePrice), currency_code: "irr" }]
-                      }),
+                      body: JSON.stringify({ create: pricesToCreate }),
                       credentials: "include"
                   });
                   if (!saleRes.ok) throw new Error("ثبت قیمت تخفیف ناموفق بود");
               } catch (saleError) {
                   console.error(saleError);
-                  toast.warning("محصول ساخته شد ولی ثبت قیمت با تخفیف با خطا مواجه شد. از صفحه ویرایش دوباره امتحان کنید.");
+                  toast.warning("محصول ساخته شد ولی ثبت قیمت با تخفیف با خطا مواجه شد.");
               }
           }
+      } else if ((simpleSalePrice || variants.some(v => v.sale_price)) && !PRICE_LIST_ID) {
+          toast.warning("شناسه لیست تخفیف تنظیم نشده است — قیمت تخفیف‌ها ذخیره نشد.");
       }
 
       toast.success("محصول با موفقیت ساخته شد!");
@@ -348,35 +384,46 @@ export default function CreateProductForm({ token }: { token: string }) {
         
         <div className="xl:col-span-2 space-y-6">
           
+          {/* Base Info Box */}
           <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-5">
-            <h2 className="font-bold text-lg text-gray-800 border-b pb-3">اطلاعات پایه</h2>
+            <h2 className="font-bold text-lg text-gray-800 border-b pb-3">اطلاعات اصلی</h2>
             <div className="space-y-4">
-               <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-1">نام محصول <span className="text-red-500">*</span></label>
-                  <Input value={title} onChange={e => setTitle(e.target.value)} required placeholder="مثلا: پیراهن نخی" />
-               </div>
                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 block mb-1">زیرعنوان</label>
-                    <Input value={subtitle} onChange={e => setSubtitle(e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 block mb-1">Handle</label>
-                    <Input value={handle} onChange={e => setHandle(e.target.value)} className="font-mono text-xs bg-gray-50" dir="ltr" placeholder="auto-generated" />
-                  </div>
+                 <div>
+                    <label className="text-sm font-medium block mb-1">نام محصول <span className="text-red-500">*</span></label>
+                    <Input value={title} onChange={e => setTitle(e.target.value)} required placeholder="مثلا: دمنوش آرامبخش" />
+                 </div>
+                 <div>
+                    <label className="text-sm font-medium block mb-1">اسلاگ (URL)</label>
+                    <Input value={handle} onChange={e => setHandle(e.target.value)} className="font-mono text-xs bg-gray-50" dir="ltr" placeholder="تولید خودکار" />
+                 </div>
                </div>
                <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-1">توضیحات کوتاه (SEO)</label>
-                  <Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="توضیح مختصر..." className="h-24 resize-none" />
+                  <label className="text-sm font-medium block mb-1">توضیحات کوتاه محصول (خلاصه)</label>
+                  <RichTextEditor content={subtitle} onChange={setSubtitle} />
+               </div>
+               <div>
+                  <label className="text-sm font-medium block mb-1">توضیحات کامل محصول</label>
+                  <div className="min-h-[200px]">
+                    <RichTextEditor content={description} onChange={setDescription} />
+                  </div>
                </div>
             </div>
           </div>
 
+          {/* SEO Info Box */}
           <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-5">
-             <h2 className="font-bold text-lg text-gray-800 border-b pb-3">نقد و بررسی (توضیحات کامل)</h2>
-             <div className="min-h-[250px]">
-                <RichTextEditor content={fullDescription} onChange={setFullDescription} />
-             </div>
+            <h2 className="font-bold text-lg text-gray-800 border-b pb-3">تنظیمات سئو (SEO)</h2>
+            <div className="space-y-4">
+               <div>
+                  <label className="text-sm font-medium block mb-1">عنوان سئو (Meta Title)</label>
+                  <Input value={seoTitle} onChange={e => setSeoTitle(e.target.value)} placeholder={`${title || "نام محصول"} | داروبرگ`} />
+               </div>
+               <div>
+                  <label className="text-sm font-medium block mb-1">توضیحات سئو (Meta Description)</label>
+                  <Textarea value={seoDescription} onChange={e => setSeoDescription(e.target.value)} placeholder="اگر خالی باشد، بخشی از توضیحات کوتاه استفاده می‌شود..." className="h-24 resize-none" />
+               </div>
+            </div>
           </div>
 
           <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-6">
@@ -384,7 +431,7 @@ export default function CreateProductForm({ token }: { token: string }) {
                 <h2 className="font-bold text-lg text-gray-800">قیمت و متغیرها</h2>
                 <div className="flex bg-gray-100 p-1 rounded-lg">
                     <button type="button" onClick={() => setProductType("simple")} className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${productType === "simple" ? "bg-white shadow text-black" : "text-gray-500 hover:text-gray-700"}`}>ساده</button>
-                    <button type="button" onClick={() => setProductType("variable")} className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${productType === "variable" ? "bg-white shadow text-black" : "text-gray-500 hover:text-gray-700"}`}>متغیر (رنگ/سایز)</button>
+                    <button type="button" onClick={() => setProductType("variable")} className={`px-4 py-1.5 text-sm font-medium rounded-md transition-all ${productType === "variable" ? "bg-white shadow text-black" : "text-gray-500 hover:text-gray-700"}`}>متغیر (رنگ/سایز/وزن)</button>
                 </div>
             </div>
 
@@ -447,47 +494,31 @@ export default function CreateProductForm({ token }: { token: string }) {
                         </Button>
                     </div>
 
-                    {variants.length > 0 && (
-                        <div className="border rounded-xl overflow-hidden shadow-sm">
-                            <div className="bg-gray-100 px-4 py-2 border-b flex items-center justify-between">
-                                <span className="text-xs font-bold text-gray-600">لیست متغیرها ({variants.length})</span>
-                                <Button variant="ghost" size="sm" className="text-red-500 h-6 text-xs hover:bg-red-50" onClick={() => setVariants([])}>پاک کردن همه</Button>
-                            </div>
-                            <div className="max-h-[400px] overflow-y-auto">
-                                <table className="w-full text-sm text-right">
-                                    <thead className="bg-gray-50 text-gray-500 sticky top-0 z-10 text-xs uppercase">
-                                        <tr>
-                                            <th className="px-4 py-3">ترکیب</th>
-                                            <th className="px-4 py-3 w-28">قیمت</th>
-                                            <th className="px-4 py-3 w-20">موجودی</th>
-                                            <th className="px-4 py-3 w-20">وزن(g)</th>
-                                            <th className="px-4 py-3 w-28">SKU</th>
-                                            <th className="px-4 py-3 w-10"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100">
-                                        {variants.map((v) => (
-                                            <tr key={v.id} className="bg-white hover:bg-gray-50 group">
-                                                <td className="px-4 py-2 font-medium">
-                                                    <div className="flex gap-1 flex-wrap">
-                                                        {Object.entries(v.options).map(([k, val]) => (
-                                                            <span key={k} className="bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded text-[10px] flex items-center gap-1"><span className="opacity-50">{k}:</span> {val}</span>
-                                                        ))}
-                                                    </div>
-                                                </td>
-                                                <td className="px-4 py-2"><Input type="number" className="h-8 text-xs" placeholder="0" value={v.price} onChange={(e) => updateVariantField(v.id, "price", e.target.value)} /></td>
-                                                <td className="px-4 py-2"><Input type="number" className="h-8 text-xs" placeholder="0" value={v.inventory} onChange={(e) => updateVariantField(v.id, "inventory", e.target.value)} /></td>
-                                                <td className="px-4 py-2"><Input type="number" className="h-8 text-xs" placeholder="500" value={v.weight} onChange={(e) => updateVariantField(v.id, "weight", e.target.value)} /></td>
-                                                <td className="px-4 py-2"><Input className="h-8 text-xs font-mono" placeholder="Auto" value={v.sku} onChange={(e) => updateVariantField(v.id, "sku", e.target.value)} /></td>
-                                                <td className="px-4 py-2 text-center">
-                                                    <Button size="icon" variant="ghost" className="h-7 w-7 text-gray-300 hover:text-red-500" onClick={() => removeVariant(v.id)}><Trash2 className="w-4 h-4" /></Button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                    {variants.length === 0 ? (
+                       <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg border border-dashed">هیچ متغیری ندارد.</div>
+                    ) : (
+                       <div className="space-y-3">
+                          {variants.map((v, idx) => (
+                             <div key={v.id || idx} className="flex gap-3 items-end p-4 rounded-xl border border-gray-200 hover:border-gray-300 transition-colors flex-wrap bg-gray-50">
+                                <div className="flex-1 min-w-[200px]">
+                                    <label className="text-xs font-medium text-gray-500 mb-1 block">عنوان</label>
+                                    <div className="h-9 flex items-center px-3 font-medium text-sm text-gray-700 bg-white rounded border border-gray-200">{v.title}</div>
+                                </div>
+                                <div className="w-36 flex flex-col gap-1">
+                                    <label className="text-xs font-medium text-gray-500 block">قیمت / تخفیف (ریال)</label>
+                                    <Input type="number" placeholder="اصلی" value={v.price} onChange={(e) => { const newV = [...variants]; newV[idx].price = e.target.value; setVariants(newV); }} className="bg-white h-8 text-xs" />
+                                    <Input type="number" placeholder="با تخفیف" value={v.sale_price || ""} onChange={(e) => { const newV = [...variants]; newV[idx].sale_price = e.target.value; setVariants(newV); }} className="bg-white h-8 text-xs border-red-200 placeholder:text-red-300" />
+                                </div>
+                                <div className="w-24"><label className="text-xs font-medium text-gray-500 mb-1 block">موجودی</label><Input type="number" value={v.inventory} onChange={(e) => { const newV = [...variants]; newV[idx].inventory = e.target.value; setVariants(newV); }} className="bg-white h-8 text-xs" /></div>
+                                 
+                                <div className="w-24"><label className="text-xs font-medium text-gray-500 mb-1 block">وزن (گرم)</label><Input type="number" value={v.weight} onChange={(e) => { const newV = [...variants]; newV[idx].weight = e.target.value; setVariants(newV); }} className="bg-white h-8 text-xs" placeholder="مثلا 500" /></div>
+                                 
+                                <div className="w-32"><label className="text-xs font-medium text-gray-500 mb-1 block">SKU</label><Input value={v.sku} onChange={(e) => { const newV = [...variants]; newV[idx].sku = e.target.value; setVariants(newV); }} className="bg-white h-8 text-xs font-mono" placeholder="Auto" /></div>
+                                 
+                                <Button type="button" variant="ghost" size="icon" onClick={() => removeVariant(v.id)} className="text-gray-400 hover:text-red-500 hover:bg-red-50 mb-0.5"><Trash2 className="h-4 w-4" /></Button>
+                             </div>
+                          ))}
+                       </div>
                     )}
                 </div>
             )}

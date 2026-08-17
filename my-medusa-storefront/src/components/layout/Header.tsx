@@ -19,6 +19,7 @@ const MENU_ITEMS = [
   { title: "فروشگاه", href: "/store" },
   { title: "درباره ما", href: "/about" },
   { title: "تماس با ما", href: "/contact" },
+  { title: "وبلاگ", href: "/blog" },
 ];
 
 export default function Header() {

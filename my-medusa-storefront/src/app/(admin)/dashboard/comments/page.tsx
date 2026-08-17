@@ -2,9 +2,16 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CheckCircleIcon, TrashIcon, ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
-import { getComments, approveCommentAction, deleteCommentAction } from "./actions"; // 👈 ایمپورت اکشن‌ها
-import { toast } from "sonner"; // پیشنهاد: استفاده از toast برای نمایش پیام‌ها
+import { 
+  CheckCircleIcon, 
+  TrashIcon, 
+  ArrowTopRightOnSquareIcon, 
+  MagnifyingGlassIcon, 
+  ChevronRightIcon, 
+  ChevronLeftIcon 
+} from "@heroicons/react/24/outline";
+import { getComments, approveCommentAction, deleteCommentAction } from "./actions";
+import { toast } from "sonner";
 
 interface Comment {
   id: string;
@@ -19,6 +26,11 @@ interface Comment {
 export default function AdminCommentsPage() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // 🟢 استیت‌های جدید برای جستجو و صفحه‌بندی اضافه شد
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   // دریافت لیست نظرات با استفاده از Server Action
   const loadComments = async () => {
@@ -40,7 +52,7 @@ export default function AdminCommentsPage() {
     const res = await approveCommentAction(id);
     if (res.success) {
       toast.success("نظر تایید شد");
-      loadComments(); // رفرش لیست
+      loadComments();
     } else {
       toast.error(res.error || "خطا در عملیات");
     }
@@ -49,20 +61,30 @@ export default function AdminCommentsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("آیا از حذف این نظر مطمئن هستید؟")) return;
     
-    // UI Optimistic Update (اختیاری: حذف فوری از لیست برای حس سرعت)
     const originalComments = [...comments];
     setComments(comments.filter(c => c.id !== id));
 
     const res = await deleteCommentAction(id);
     if (res.success) {
       toast.success("نظر حذف شد");
-      // نیازی به لود مجدد نیست چون دستی حذف کردیم، اما برای اطمینان:
-      // loadComments(); 
     } else {
       toast.error("خطا در حذف");
-      setComments(originalComments); // برگرداندن در صورت خطا
+      setComments(originalComments);
     }
   };
+
+  // 🟢 فیلتر کردن نظرات بر اساس جستجو (نام نویسنده، متن نظر یا عنوان مقاله)
+  const filteredComments = comments.filter((comment) => {
+    const search = searchTerm.toLowerCase();
+    const author = (comment.author_name || "").toLowerCase();
+    const content = (comment.content || "").toLowerCase();
+    const postTitle = (comment.post_title || "").toLowerCase();
+    return author.includes(search) || content.includes(search) || postTitle.includes(search);
+  });
+
+  // 🟢 محاسبه متغیرهای صفحه‌بندی
+  const totalPages = Math.ceil(filteredComments.length / pageSize) || 1;
+  const paginatedComments = filteredComments.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   if (loading) return <div className="p-10 text-center text-gray-500">در حال دریافت نظرات...</div>;
 
@@ -70,6 +92,41 @@ export default function AdminCommentsPage() {
     <div className="p-8 space-y-6" dir="rtl">
       <h1 className="text-2xl font-bold mb-6 text-gray-800">مدیریت نظرات وبلاگ</h1>
       
+      {/* 🔍 بخش جستجو و انتخاب تعداد نمایش در هر صفحه */}
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div className="relative w-full sm:w-80">
+          <MagnifyingGlassIcon className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <input
+            type="text"
+            placeholder="جستجو بر اساس نویسنده، متن یا مقاله..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1); // بازگشت به صفحه اول هنگام سرچ
+            }}
+            // 🟢 تغییر رنگ focus به رنگ برند (#B19276)
+            className="w-full pr-10 pl-4 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-[#B19276] transition-colors shadow-sm bg-white"
+          />
+        </div>
+
+        <div className="flex items-center gap-2 text-sm text-gray-600 w-full sm:w-auto justify-end">
+          <span>تعداد در صفحه:</span>
+          <select
+            value={pageSize}
+            onChange={(e) => {
+              setPageSize(Number(e.target.value));
+              setCurrentPage(1); // بازگشت به صفحه اول هنگام تغییر سایز صفحه
+            }}
+            className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm outline-none bg-white shadow-sm focus:border-[#B19276]"
+          >
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+        </div>
+      </div>
+
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <table className="w-full text-right">
           <thead className="bg-gray-50 text-gray-600 text-sm border-b">
@@ -83,65 +140,99 @@ export default function AdminCommentsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {comments.length === 0 ? (
+            {paginatedComments.length === 0 ? (
                 <tr>
                     <td colSpan={6} className="p-10 text-center text-gray-400">هیچ نظری یافت نشد.</td>
                 </tr>
             ) : (
-                comments.map((comment) => (
+                paginatedComments.map((comment) => (
                 <tr key={comment.id} className="hover:bg-gray-50 transition-colors">
                     <td className="p-4 font-medium text-gray-900">{comment.author_name}</td>
                     
                     <td className="p-4 text-gray-600 max-w-xs truncate" title={comment.content}>
-                    {comment.content}
+                      {comment.content}
                     </td>
 
-                    <td className="p-4 text-sm text-blue-600">
-                    {comment.post_slug ? (
-                        <Link href={`/blog/${comment.post_slug}`} target="_blank" className="flex items-center gap-1 hover:underline">
-                        <span className="truncate max-w-[150px]">{comment.post_title}</span>
-                        <ArrowTopRightOnSquareIcon className="w-3 h-3" />
-                        </Link>
-                    ) : (
-                        <span className="text-gray-400 text-xs">مقاله حذف شده</span>
-                    )}
+                    {/* 🟢 تغییر رنگ لینک مقاله به رنگ برند */}
+                    <td className="p-4 text-sm text-[#B19276]">
+                      {comment.post_slug ? (
+                          <Link href={`/blog/${comment.post_slug}`} target="_blank" className="flex items-center gap-1 hover:underline">
+                            <span className="truncate max-w-[150px]">{comment.post_title}</span>
+                            <ArrowTopRightOnSquareIcon className="w-3 h-3" />
+                          </Link>
+                      ) : (
+                          <span className="text-gray-400 text-xs">مقاله حذف شده</span>
+                      )}
                     </td>
 
                     <td className="p-4 text-sm text-gray-400 whitespace-nowrap">
-                    {new Date(comment.created_at).toLocaleDateString('fa-IR')}
+                      {new Date(comment.created_at).toLocaleDateString('fa-IR')}
                     </td>
                     
                     <td className="p-4 whitespace-nowrap">
-                    {comment.status === "approved" ? (
-                        <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold border border-green-200">تایید شده</span>
-                    ) : (
-                        <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-bold border border-yellow-200">در انتظار</span>
-                    )}
+                      {comment.status === "approved" ? (
+                          <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold border border-green-200">تایید شده</span>
+                      ) : (
+                          <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-bold border border-yellow-200">در انتظار</span>
+                      )}
                     </td>
                     
                     <td className="p-4 flex gap-2">
-                    {comment.status !== "approved" && (
-                        <button 
-                        onClick={() => handleApprove(comment.id)}
-                        className="text-green-600 hover:bg-green-50 p-2 rounded-lg transition-colors border border-transparent hover:border-green-100"
-                        title="تایید"
-                        >
-                        <CheckCircleIcon className="w-5 h-5" />
-                        </button>
-                    )}
-                    <button 
-                        onClick={() => handleDelete(comment.id)}
-                        className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors border border-transparent hover:border-red-100"
-                        title="حذف"
-                    >
-                        <TrashIcon className="w-5 h-5" />
-                    </button>
+                      {comment.status !== "approved" && (
+                          <button 
+                            onClick={() => handleApprove(comment.id)}
+                            className="text-green-600 hover:bg-green-50 p-2 rounded-lg transition-colors border border-transparent hover:border-green-100"
+                            title="تایید"
+                          >
+                            <CheckCircleIcon className="w-5 h-5" />
+                          </button>
+                      )}
+                      <button 
+                          onClick={() => handleDelete(comment.id)}
+                          className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors border border-transparent hover:border-red-100"
+                          title="حذف"
+                      >
+                          <TrashIcon className="w-5 h-5" />
+                      </button>
                     </td>
                 </tr>
                 ))
             )}
           </tbody>
         </table>
+
+        {/* 📄 بخش صفحه‌بندی (Pagination) در انتهای جدول */}
+        {filteredComments.length > 0 && (
+          <div className="flex items-center justify-between px-6 py-4 bg-gray-50 border-t border-gray-200 text-sm text-gray-600">
+            <div>
+              نمایش {(currentPage - 1) * pageSize + 1} تا {Math.min(currentPage * pageSize, filteredComments.length)} از {filteredComments.length} نظر
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md border text-sm font-medium bg-white hover:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none shadow-sm transition-colors hover:text-[#B19276]"
+              >
+                <ChevronRightIcon className="w-4 h-4" />
+                قبلی
+              </button>
+
+              <span className="px-2 font-medium">
+                صفحه {currentPage} از {totalPages}
+              </span>
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-md border text-sm font-medium bg-white hover:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none shadow-sm transition-colors hover:text-[#B19276]"
+              >
+                بعدی
+                <ChevronLeftIcon className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ const mapMedusaProductToType = (medusaProduct: any): Product => {
   return {
     id: medusaProduct.id,
     title: medusaProduct.title,
+    subtitle: medusaProduct.subtitle, // 🟢 اضافه شدن فیلد subtitle
     handle: medusaProduct.handle,
     description: medusaProduct.description,
     categories: medusaProduct.categories || [],
@@ -64,7 +65,7 @@ export async function getProductsList(): Promise<Product[]> {
     const { products } = await medusaClient.store.product.list({
       limit: 20,
       fields:
-        "*variants.calculated_price,+variants.inventory_quantity,+variants.manage_inventory,+variants.allow_backorder,+variants.prices",
+        "*variants.calculated_price,+variants.inventory_quantity,+variants.manage_inventory,+variants.allow_backorder,+variants.prices,+subtitle",
       region_id: region.id,
     });
 
@@ -98,7 +99,7 @@ export async function getCollectionProducts(handle: string): Promise<Product[]> 
     const { products } = await medusaClient.store.product.list({
       collection_id: [collections[0].id],
       fields:
-        "*variants.calculated_price,+variants.inventory_quantity,+variants.manage_inventory,+variants.allow_backorder,+variants.prices",
+        "*variants.calculated_price,+variants.inventory_quantity,+variants.manage_inventory,+variants.allow_backorder,+variants.prices,+subtitle",
       region_id: region.id,
     });
 
@@ -113,39 +114,29 @@ export async function getCollectionProducts(handle: string): Promise<Product[]> 
  * Retrieves a single product's detailed information by its handle.
  */
 export async function getProductByHandle(handle: string): Promise<Product | null> {
-  // ۱. دریافت ریجن (همان کدهای خودتان)
   const region = await getRegion();
   if (!region) return null;
 
   try {
-    // ۲. کلید حیاتی: ارسال کلید پابلیشبل برای فعال شدن سیستم تخفیف‌ها در Medusa v2
     const customHeaders = {
       "x-publishable-api-key": process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "",
     };
 
-    // ۳. فراخوانی با Medusa Client به همراه هدرهای سفارشی
     const { products } = await medusaClient.store.product.list(
       {
         handle,
         fields:
-          "*variants.calculated_price,+variants.inventory_quantity,+variants.manage_inventory,+variants.allow_backorder,+variants.prices,+options,+images,+metadata,*categories",
+          "*variants.calculated_price,+variants.inventory_quantity,+variants.manage_inventory,+variants.allow_backorder,+variants.prices,+options,+images,+metadata,*categories,+subtitle",
         region_id: region.id,
       },
-      customHeaders // ارسال هدر به عنوان پارامتر دوم
+      customHeaders
     );
 
     if (!products.length) return null;
 
-    // لاگ‌های شما:
-    console.log("=== TEST RESULTS FOR:", products[0].title, "===");
-    console.log("CALCULATED PRICE OBJ:", JSON.stringify(products[0].variants[0]?.calculated_price, null, 2));
-    console.log("=====================================");
-
-    // دیتای مدوسا را از فیلتر شما عبور می‌دهیم
     const mappedProduct = mapMedusaProductToType(products[0]);
 
-    // **تزریق قطعی:** برای اینکه مطمئن شویم مپر (Mapper) شما دیتا را پاک نکرده است،
-    // آبجکت calculated_price را به زور و مستقیماً روی واریانت‌های مپ‌شده می‌چسبانیم
+    // Re-inject calculated_price object directly to mapped variants
     if (mappedProduct && mappedProduct.variants) {
       mappedProduct.variants = mappedProduct.variants.map((variant: any, index: number) => ({
         ...variant,

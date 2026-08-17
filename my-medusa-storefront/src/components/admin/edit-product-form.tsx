@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea"; // 🟢 اضافه شده برای فیلد توضیحات سئو
 import {
   ChevronRight, Save, ImagePlus, Loader2, X, Trash2,
   Plus, Layers, RefreshCw, AlertTriangle, TableProperties, Ruler
@@ -40,10 +41,14 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
   const authHeaders = { "Authorization": `Bearer ${token}` };
 
   const [title, setTitle] = useState("");
-  const [subtitle, setSubtitle] = useState("");
+  const [subtitle, setSubtitle] = useState(""); // 🟢 حالا به عنوان توضیحات کوتاه استفاده می‌شود
   const [handle, setHandle] = useState("");
-  const [description, setDescription] = useState("");
-  const [fullDescription, setFullDescription] = useState("");
+  const [description, setDescription] = useState(""); // 🟢 حالا به عنوان توضیحات کامل استفاده می‌شود
+  
+  // 🟢 استیت‌های جدید سئو
+  const [seoTitle, setSeoTitle] = useState("");
+  const [seoDescription, setSeoDescription] = useState("");
+
   const [images, setImages] = useState<ProductImage[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [defaultSalesChannelId, setDefaultSalesChannelId] = useState("");
@@ -141,11 +146,16 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
             }
         }
 
+        // 🟢 تطبیق فیلدها با استاندارد جدید
         setTitle(product.title || "");
-        setSubtitle(product.subtitle || "");
+        setSubtitle(product.subtitle || ""); 
         setHandle(product.handle || "");
-        setDescription(product.description || "");
-        setFullDescription((product.metadata?.full_description as string) || "");
+        setDescription(product.description || ""); 
+        
+        // 🟢 دریافت دیتای سئو از متادیتا
+        setSeoTitle(product.metadata?.seo_title as string || "");
+        setSeoDescription(product.metadata?.seo_description as string || "");
+
         setRelatedIds(product.metadata?.related_product_ids || []);
         setSelectedSizeGuideId((product.metadata?.size_guide_id as string) || "");
         setSelectedSpecTemplateId((product.metadata?.spec_template_id as string) || "");
@@ -235,6 +245,11 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
     setSaving(true);
     const PRICE_LIST_ID = process.env.NEXT_PUBLIC_GLOBAL_SALE_PRICE_LIST_ID;
 
+    // 🟢 پاک‌سازی HTML برای تولید توضیحات سئو در صورتی که کاربر آن را خالی بگذارد
+    const stripHtml = (html: string) => html ? html.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim() : "";
+    const finalSeoTitle = seoTitle.trim() || `${title} | خانه ابزار`;
+    const finalSeoDesc = seoDescription.trim() || stripHtml(subtitle).substring(0, 160);
+
     try {
       const thumbnailImg = images.find(i => i.isThumbnail) || images[0];
 
@@ -246,7 +261,9 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
           origin_country: "IR",
           weight: variants.length > 0 && variants[0].weight ? Number(variants[0].weight) : null,
           metadata: {
-              full_description: fullDescription,
+              // 🟢 اضافه شدن دیتای سئو به متادیتا
+              seo_title: finalSeoTitle,
+              seo_description: finalSeoDesc,
               size_guide_id: selectedSizeGuideId,
               size_guide_url: selectedSizeGuideId ? sizeGuides.find(s => s.id === selectedSizeGuideId)?.image_url : null,
               spec_template_id: selectedSpecTemplateId,
@@ -272,7 +289,6 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
       if (newVariants.length > 0) {
           let prodDetails = await fetch(`${BASE_URL}/admin/products/${id}/details`, { headers: authHeaders, credentials: "include" }).then(r => r.json());
           
-          // ۰. پیش‌تصفیه: نابود کردن Default Variant و Default Option (ارواح سرگردان) قبل از هر کاری
           const variantsToDelete = prodDetails.product.variants.filter((v: any) =>
               v.title === "Default Variant" || v.options?.some((o: any) => o.value === "Default Variant")
           );
@@ -290,12 +306,10 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
               } catch(e) {}
           }
 
-          // دریافت وضعیت جدید و تمیز پس از پاکسازی
           await new Promise(r => setTimeout(r, 1000));
           prodDetails = await fetch(`${BASE_URL}/admin/products/${id}/details`, { headers: authHeaders, credentials: "include" }).then(r => r.json());
           let currentOptions = prodDetails.product.options || [];
 
-          // ۱. ساخت آپشن‌های جدید (رنگ، سایز و ...)
           const newOptionTitles = Object.keys(selectedAttrs);
           let optionsModified = false;
 
@@ -320,7 +334,6 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
               currentOptions = prodDetails.product.options || [];
           }
 
-          // ۲. ساخت واریانت‌های جدید
           for (const v of newVariants) {
               const medusaOptionsPayload: Record<string, string> = {};
               
@@ -365,7 +378,6 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
               
               if (!createVarRes.ok) {
                   const errorText = await createVarRes.text();
-                  // تغییر کلیدی: اگر مدوسا گفت متغیر از قبل وجود دارد، کِرَش نمی‌کنیم!
                   if (errorText.includes("already exists")) {
                       console.warn(`واریانت ${v.title} از قبل در دیتابیس وجود دارد. ایجاد مجدد نادیده گرفته شد.`);
                   } else {
@@ -375,14 +387,12 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
               }
           }
 
-          // ۳. دریافت دیتای نهایی و آپدیت قیمت‌ها، انبار و تخفیف‌ها
           await new Promise(r => setTimeout(r, 1500));
           prodDetails = await fetch(`${BASE_URL}/admin/products/${id}/details`, { headers: authHeaders, credentials: "include" }).then(r => r.json());
 
           for (const v of newVariants) {
               const dbVariant = prodDetails.product.variants.find((dbV: any) => dbV.title === v.title);
               if (dbVariant) {
-                  // آپدیت قیمت پایه و اطلاعات دیگر (چون اگر واریانت از قبل وجود داشته، ممکن است قیمت پایه در UI تغییر کرده باشد)
                   const updatePayload: any = { sku: v.sku || null, weight: v.weight ? Number(v.weight) : null };
                   const irrPrice = dbVariant.prices?.find((p: any) => p.currency_code?.toLowerCase() === "irr");
                   if (irrPrice) {
@@ -396,12 +406,10 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
                       body: JSON.stringify(updatePayload), credentials: "include"
                   });
 
-                  // آپدیت انبار
                   if (dbVariant.inventory_item_id && stockLocationId) {
                       await updateInventoryStandard(dbVariant.inventory_item_id, Number(v.inventory), stockLocationId);
                   }
                   
-                  // آپدیت قیمت حراج
                   if (PRICE_LIST_ID && v.sale_price && Number(v.sale_price) > 0) {
                       await fetch(`${BASE_URL}/admin/price-lists/${PRICE_LIST_ID}/prices/batch`, {
                           method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
@@ -414,8 +422,9 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
               }
           }
       }
-            const existingVariants = variants.filter(v => !v.id?.startsWith("NEW_"));
-      // آپدیت قیمت‌های پایه و موجودی برای واریانت‌های قدیمی
+      
+      const existingVariants = variants.filter(v => !v.id?.startsWith("NEW_"));
+      
       for (const v of existingVariants) {
           const variantPayload: any = {
               sku: v.sku || null,
@@ -439,60 +448,6 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
               throw new Error(`خطا در آپدیت اطلاعات واریانت: ${v.title}`);
           }
 
-          if (PRICE_LIST_ID) {
-              const parsedSale = Number(v.sale_price);
-
-              if (parsedSale && parsedSale > 0) {
-                  const batchPayload: any = {
-                      create: [{ variant_id: v.id, amount: parsedSale, currency_code: "irr" }]
-                  };
-                  if (v.sale_price_id) batchPayload.delete = [v.sale_price_id];
-
-                  await fetch(`${BASE_URL}/admin/price-lists/${PRICE_LIST_ID}/prices/batch`, {
-                      method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
-                      body: JSON.stringify(batchPayload),
-                      credentials: "include"
-                  });
-              } 
-              else if (v.sale_price_id) {
-                  await fetch(`${BASE_URL}/admin/price-lists/${PRICE_LIST_ID}/prices/batch`, {
-                      method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
-                      body: JSON.stringify({ delete: [v.sale_price_id] }),
-                      credentials: "include"
-                  });
-              }
-          }
-
-          // استفاده از تابع استاندارد برای آپدیت‌های معمولی
-          if (v.inventory_item_id && stockLocationId) {
-             await updateInventoryStandard(v.inventory_item_id, Number(v.inventory), stockLocationId);
-          }
-      }
-      // آپدیت قیمت‌های پایه و موجودی برای واریانت‌های قدیمی
-      for (const v of existingVariants) {
-          const variantPayload: any = {
-              sku: v.sku || null,
-              origin_country: "IR",
-              weight: v.weight ? Number(v.weight) : null
-          };
-
-          if (v.price_id) {
-              variantPayload.prices = [{ id: v.price_id, amount: Number(v.price), currency_code: "irr" }];
-          } else {
-              variantPayload.prices = [{ amount: Number(v.price), currency_code: "irr" }];
-          }
-
-          const varRes = await fetch(`${BASE_URL}/admin/products/${id}/variants/${v.id}`, {
-              method: "POST", headers: { "Content-Type": "application/json", ...authHeaders },
-              body: JSON.stringify(variantPayload),
-              credentials: "include"
-          });
-
-          if (!varRes.ok) {
-              throw new Error(`خطا در آپدیت اطلاعات واریانت: ${v.title}`);
-          }
-
-          // آپدیت تخفیف‌ها با حذف آیدی قدیمی (ارواح) و جایگزینی آن
           if (PRICE_LIST_ID) {
               const parsedSale = Number(v.sale_price);
 
@@ -518,8 +473,8 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
           }
 
           if (v.inventory_item_id && stockLocationId) {
-   await updateInventoryStandard(v.inventory_item_id, Number(v.inventory), stockLocationId);
-}
+             await updateInventoryStandard(v.inventory_item_id, Number(v.inventory), stockLocationId);
+          }
       }
 
       toast.success("تغییرات با موفقیت ذخیره شد");
@@ -533,10 +488,8 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
     } finally { setSaving(false); }
   };
 
-  // --- New, Standard Inventory Updater ---
   const updateInventoryStandard = async (inventoryItemId: string, quantity: number, locationId: string) => {
     try {
-        // Step 1: Link Inventory Item to Location (Creates Location Level)
         const linkRes = await fetch(`${BASE_URL}/admin/inventory-items/${inventoryItemId}/location-levels`, {
             method: "POST", 
             headers: { "Content-Type": "application/json", ...authHeaders },
@@ -544,12 +497,10 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
             credentials: "include"
         });
         
-        // If it's 400 with 'already exists', that's fine. If other errors, log them.
         if (!linkRes.ok && linkRes.status !== 400) {
             console.warn("Issue linking location level, might already exist.", await linkRes.text());
         }
 
-        // Step 2: Update the Stocked Quantity
         const updateRes = await fetch(`${BASE_URL}/admin/inventory-items/${inventoryItemId}/location-levels/${locationId}`, {
             method: "POST", 
             headers: { "Content-Type": "application/json", ...authHeaders },
@@ -585,9 +536,7 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
   const removeImage = (url: string) => setImages(prev => prev.filter(img => img.url !== url));
   const setAsThumbnail = (url: string) => setImages(prev => prev.map(img => ({ ...img, isThumbnail: img.url === url })));
 
-  // هندل کردن دکمه حذف متغیر با مدیریت هوشمند خطای دیتابیس
   const handleDeleteVariant = async (variantId: string) => {
-    // اگر متغیر هنوز در دیتابیس ذخیره نشده و فقط در UI است (آیدی موقت دارد)
     if (variantId.startsWith("NEW_")) {
       setVariants(variants.filter((v) => v.id !== variantId));
       return;
@@ -604,7 +553,6 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
       });
 
       if (!res.ok) {
-        // اگر مدوسا خطای 400 داد، یعنی متغیر قفل شده است
         if (res.status === 400) {
           toast.error(
             "این متغیر در سبد خرید مشتریان است یا سابقه سفارش دارد و قابل حذف نیست! راهکار: نام و قیمت آن را به یکی از متغیرهای جدید تغییر دهید (بازیافت متغیر).",
@@ -617,8 +565,6 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
       }
 
       toast.success("متغیر با موفقیت حذف شد");
-      
-      // آپدیت کردن لیست متغیرها در UI بدون نیاز به رفرش کل صفحه
       setVariants(variants.filter((v) => v.id !== variantId));
       
     } catch (error) {
@@ -647,13 +593,41 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
           <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-5">
             <h2 className="font-bold text-lg text-gray-800 border-b pb-3">اطلاعات اصلی</h2>
             <div className="space-y-4">
-               <div><label className="text-sm font-medium block mb-1">نام محصول</label><Input value={title} onChange={e => setTitle(e.target.value)} required /></div>
                <div className="grid grid-cols-2 gap-4">
-                  <div><label className="text-sm font-medium block mb-1">زیرعنوان</label><Input value={subtitle} onChange={e => setSubtitle(e.target.value)} /></div>
-                  <div><label className="text-sm font-medium block mb-1">اسلاگ (URL)</label><Input value={handle} onChange={e => setHandle(e.target.value)} className="font-mono text-xs bg-gray-50" dir="ltr" /></div>
+                 <div>
+                    <label className="text-sm font-medium block mb-1">نام محصول <span className="text-red-500">*</span></label>
+                    <Input value={title} onChange={e => setTitle(e.target.value)} required />
+                 </div>
+                 <div>
+                    <label className="text-sm font-medium block mb-1">اسلاگ (URL)</label>
+                    <Input value={handle} onChange={e => setHandle(e.target.value)} className="font-mono text-xs bg-gray-50" dir="ltr" />
+                 </div>
                </div>
-               <div><label className="text-sm font-medium block mb-1">توضیحات کوتاه</label><RichTextEditor content={description} onChange={setDescription} /></div>
-               <div><label className="text-sm font-medium block mb-1">توضیحات کامل</label><RichTextEditor content={fullDescription} onChange={setFullDescription} /></div>
+               <div>
+                  <label className="text-sm font-medium block mb-1">توضیحات کوتاه محصول (خلاصه)</label>
+                  <RichTextEditor content={subtitle} onChange={setSubtitle} />
+               </div>
+               <div>
+                  <label className="text-sm font-medium block mb-1">توضیحات کامل محصول</label>
+                  <div className="min-h-[200px]">
+                    <RichTextEditor content={description} onChange={setDescription} />
+                  </div>
+               </div>
+            </div>
+          </div>
+
+          {/* 🟢 بخش جدید: تنظیمات سئو اضافه شد */}
+          <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-5">
+            <h2 className="font-bold text-lg text-gray-800 border-b pb-3">تنظیمات سئو (SEO)</h2>
+            <div className="space-y-4">
+               <div>
+                  <label className="text-sm font-medium block mb-1">عنوان سئو (Meta Title)</label>
+                  <Input value={seoTitle} onChange={e => setSeoTitle(e.target.value)} placeholder={`${title || "نام محصول"} | خانه ابزار`} />
+               </div>
+               <div>
+                  <label className="text-sm font-medium block mb-1">توضیحات سئو (Meta Description)</label>
+                  <Textarea value={seoDescription} onChange={e => setSeoDescription(e.target.value)} placeholder="اگر خالی باشد، بخشی از توضیحات کوتاه استفاده می‌شود..." className="h-24 resize-none" />
+               </div>
             </div>
           </div>
 
@@ -710,6 +684,7 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
                 </div>
             )}
 
+            {/* 🟢 بخش متغیرها دقیقا مثل خانه ابزار باقی ماند (بدون قیمت عمده) */}
             {variants.length === 0 ? (
                <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg border border-dashed">هیچ متغیری ندارد.</div>
             ) : (
@@ -799,7 +774,7 @@ export default function EditProductForm({ id, token }: { id: string, token: stri
             </div>
 
             <div className="space-y-2 pt-2 border-t">
-                <label className="text-sm font-medium text-gray-700 flex items-center gap-2"><Ruler className="w-4 h-4" /> راهنمای سایز</label>
+                <label className="text-sm font-medium text-gray-700 flexش items-center gap-2"><Ruler className="w-4 h-4" /> راهنمای سایز</label>
                 <Select onValueChange={setSelectedSizeGuideId} value={selectedSizeGuideId}>
                     <SelectTrigger className="w-full text-right bg-gray-50"><SelectValue placeholder="انتخاب راهنما..." /></SelectTrigger>
                     <SelectContent>{sizeGuides.map((s) => <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>)}</SelectContent>

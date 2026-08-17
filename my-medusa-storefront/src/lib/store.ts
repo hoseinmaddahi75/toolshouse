@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 import { medusaClient } from "./medusa-client";
 import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
-// ✅ کلید عمومی مدوسا را مستقیم اینجا هاردکد می‌کنیم تا در بیلد داکر گم نشود
+// ✅ کلید عمومی مدوسا را مستقیم اینجا هاردکد میکنیم تا در بیلد داکر گم نشود
 const PUBLISHABLE_API_KEY = process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY || "";
 
 interface CartState {
@@ -12,10 +12,11 @@ interface CartState {
   currencyCode: string;
   isOpen: boolean;
 
-  // اکشن‌ها
+  // اکشنها
   initializeCart: () => Promise<void>;
   addItem: (variantId: string, quantity: number) => Promise<void>;
   removeItem: (lineId: string) => Promise<void>;
+  updateItemQuantity: (lineId: string, quantity: number) => Promise<void>;
   toggleCart: () => void;
 }
 
@@ -24,7 +25,7 @@ export const useCartStore = create<CartState>()(
     (set, get) => ({
       cartId: null,
       items: [],
-      currencyCode: "irr", // پیش‌فرض ریال یا تومان
+      currencyCode: "irr",
       isOpen: false,
 
       toggleCart: () => set((state) => ({ isOpen: !state.isOpen })),
@@ -33,7 +34,6 @@ export const useCartStore = create<CartState>()(
         let currentCartId = get().cartId;
         let cartFound = false;
 
-        // 1. تلاش برای بازیابی سبد خرید قدیمی
         if (currentCartId) {
           try {
             const { cart } = await medusaClient.store.cart.retrieve(currentCartId);
@@ -41,16 +41,14 @@ export const useCartStore = create<CartState>()(
               items: cart.items || [], 
               currencyCode: cart.currency_code 
             });
-            cartFound = true; // موفق شدیم!
+            cartFound = true;
           } catch (error) {
             console.warn("⚠️ Old cart not found (expired or deleted). Creating a new one...");
-            // اگر ارور داد (مثل الان)، آی‌دی خراب را پاک می‌کنیم
             set({ cartId: null, items: [] });
             currentCartId = null;
           }
         }
 
-        // 2. اگر سبد قبلی نبود (یا خراب بود)، یکی جدید می‌سازیم
         if (!cartFound) {
           try {
             const { regions } = await medusaClient.store.region.list({ limit: 1 });
@@ -72,7 +70,6 @@ export const useCartStore = create<CartState>()(
       },
 
       addItem: async (variantId: string, quantity: number) => {
-        // اطمینان از اینکه سبد خرید وجود دارد
         let { cartId } = get();
         if (!cartId) {
           await get().initializeCart();
@@ -96,7 +93,6 @@ export const useCartStore = create<CartState>()(
             });
           } catch (error) {
             console.error("❌ Error adding item:", error);
-            // اگر موقع افزودن خطا داد (مثلاً سبد خرید وسط کار پاک شد)، دوباره اینیشیالایز کن
             await get().initializeCart();
           }
         }
@@ -131,7 +127,6 @@ export const useCartStore = create<CartState>()(
               cartId: updatedCart.id 
             });
           } else {
-            // حذف خوش‌بینانه (Optimistic update)
             set((state) => ({
                 items: state.items.filter((item: any) => item.id !== lineId)
             }));
@@ -141,10 +136,49 @@ export const useCartStore = create<CartState>()(
           console.error("💥 Network Error:", error);
         }
       },
+
+      updateItemQuantity: async (lineId: string, quantity: number) => {
+        const cartId = get().cartId;
+        const BASE_URL = MEDUSA_BACKEND_URL;
+
+        if (!cartId) return;
+
+        try {
+          const res = await fetch(`${BASE_URL}/store/carts/${cartId}/line-items/${lineId}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-publishable-api-key": PUBLISHABLE_API_KEY,
+            },
+            body: JSON.stringify({ quantity }),
+          });
+
+          if (!res.ok) {
+            console.error("❌ API Error:", await res.text());
+            return;
+          }
+
+          const data = await res.json();
+          const updatedCart = data.cart || data;
+
+          if (updatedCart && updatedCart.items) {
+            set({ 
+              items: updatedCart.items,
+              cartId: updatedCart.id 
+            });
+          }
+        } catch (error) {
+          console.error("💥 Network Error:", error);
+        }
+      },
     }),
     {
       name: "medusa-cart-storage",
-      partialize: (state) => ({ cartId: state.cartId }),
+      partialize: (state) => ({ 
+        cartId: state.cartId,
+        items: state.items,
+        currencyCode: state.currencyCode
+      }),
     }
   )
 );

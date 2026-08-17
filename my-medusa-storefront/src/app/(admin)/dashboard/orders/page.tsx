@@ -21,6 +21,9 @@ export default async function AdminOrdersPage({
   const cookieStore = await cookies();
   const token = cookieStore.get("_medusa_admin_token")?.value;
 
+  // 🟢 تعریف متغیر محلی backendUrl با استفاده از کانستنت پروژه (منتقل شده از داروبرگ)
+  const backendUrl = MEDUSA_BACKEND_URL;
+
   let orders = [];
   let count = 0;
 
@@ -33,7 +36,8 @@ export default async function AdminOrdersPage({
         fields: "+items,+shipping_address.first_name,+shipping_address.last_name,+customer.first_name,+customer.last_name,+customer.email",
       });
 
-      const res = await fetch(`${MEDUSA_BACKEND_URL}/admin/orders?${apiParams.toString()}`, {
+      // 🟢 استفاده از متغیر محلی backendUrl در مسیر fetch
+      const res = await fetch(`${backendUrl}/admin/orders?${apiParams.toString()}`, {
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`,

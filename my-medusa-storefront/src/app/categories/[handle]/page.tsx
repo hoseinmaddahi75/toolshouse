@@ -1,3 +1,4 @@
+import { Metadata } from "next";
 import { medusaClient } from "@/lib/medusa-client";
 import ProductCard from "@/components/modules/products/ProductCard";
 import StoreBreadcrumb from "@/components/store/store-breadcrumb";
@@ -60,6 +61,50 @@ async function getCategoryByHandle(handle: string) {
   }
 }
 
+// ----------------------------------------------------------------------
+// ۱. تولید متادیتا و اُپن‌گراف برای صفحه دسته‌بندی (اضافه شده برای خانه ابزار)
+// ----------------------------------------------------------------------
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const resolvedParams = await props.params;
+  const category = await getCategoryByHandle(resolvedParams.handle);
+
+  if (!category) {
+    return { title: "دسته‌بندی یافت نشد | خانه ابزار" };
+  }
+
+  const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://khanehabzar.com";
+  // 🟢 مسیر دسته‌بندی هماهنگ با سایت
+  const categoryUrl = `${baseUrl}/categories/${resolvedParams.handle}`; 
+
+  // 🟢 برندینگ خانه ابزار
+  const seoTitle = `${category.name} | خرید با بهترین قیمت | خانه ابزار`;
+  const seoDescription = category.description || `خرید آنلاین انواع محصولات دسته‌بندی ${category.name} با بهترین قیمت، تضمین اصالت کالا و ارسال سریع به سراسر ایران در فروشگاه خانه ابزار.`;
+
+  return {
+    title: seoTitle,
+    description: seoDescription,
+    alternates: {
+      canonical: categoryUrl, // جلوگیری از صفحات تکراری ناشی از پارامترهای Pagination مثل ?page=2
+    },
+    openGraph: {
+      title: seoTitle,
+      description: seoDescription,
+      url: categoryUrl,
+      siteName: "خانه ابزار", // 🟢 تغییر به نام برند
+      locale: "fa_IR",
+      type: "website",
+    },
+    twitter: {
+      card: "summary",
+      title: seoTitle,
+      description: seoDescription,
+    }
+  };
+}
+
+// ----------------------------------------------------------------------
+// ۲. صفحه اصلی دسته‌بندی و تولید خودکار اسکیما
+// ----------------------------------------------------------------------
 export default async function CategoryPage({ params, searchParams }: Props) {
   const resolvedParams = await params;
   const resolvedSearch = await searchParams;
@@ -97,8 +142,36 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   const products = rawProducts.map(mapMedusaProductToType);
   const totalPages = Math.ceil(count / limit);
 
+  // --- ساخت خودکار اسکیمای کالکشن و لیست محصولات (ItemList & CollectionPage) ---
+  const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://khanehabzar.com";
+  const categoryUrl = `${baseUrl}/categories/${handle}`;
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": category.name,
+    "description": category.description || `لیست محصولات دسته‌بندی ${category.name}`,
+    "url": categoryUrl,
+    "mainEntity": {
+      "@type": "ItemList",
+      "itemListElement": products.map((product: any, index: number) => ({
+        "@type": "ListItem",
+        "position": index + 1, // جایگاه محصول در این صفحه (برای سئو عالی است)
+        "url": `${baseUrl}/products/${product.handle}`,
+        "name": product.title
+      }))
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white" dir="rtl">
+      
+      {/* 🟢 تزریق اسکیما پنهان برای خزنده‌های گوگل */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       <StoreBreadcrumb title={category.name} />
       <div className="container mx-auto px-4 py-8 max-w-[1440px]">
         
