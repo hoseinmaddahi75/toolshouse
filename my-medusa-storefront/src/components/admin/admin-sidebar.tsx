@@ -57,6 +57,8 @@ export default function AdminSidebar() {
         { title: "لیست محصولات", href: "/dashboard/products" },
         { title: "دسته‌بندی‌ها", href: "/dashboard/categories" },
         { title: "تخفیف ها", href: "/dashboard/promotions" },
+        { title: "ویرایش دسته جمعی", href: "/dashboard/bulk-pricing" },
+        
       ]
     },
     {

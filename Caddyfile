@@ -1,5 +1,10 @@
 toolshouse.ir {
     reverse_proxy frontend:3000
+    @static {
+        path /images/*
+        path /_next/static/*
+    }
+    header @static Cache-Control "public, max-age=31536000, immutable"
 }
 
 api.toolshouse.ir {

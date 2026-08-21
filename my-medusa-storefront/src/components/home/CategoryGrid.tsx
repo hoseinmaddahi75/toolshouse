@@ -8,28 +8,28 @@ const CATEGORIES = [
     title: "ابزار اندازه گیری",
     href: "/categories/abzar-aalat-andazh-gyry-2377",
     image: "/images/cat1.jpg",
-    className: "col-span-1 sm:col-span-2 lg:col-span-2 lg:row-span-2", 
+    className: "col-span-1 sm:col-span-2 lg:col-span-2 lg:row-span-2",
   },
   {
     id: 2,
     title: "ابزار بادی",
     href: "/categories/abzar-aalat-bady-2387",
     image: "/images/cat2.jpg",
-    className: "col-span-1 lg:col-span-1 lg:row-span-1", 
+    className: "col-span-1 lg:col-span-1 lg:row-span-1",
   },
   {
     id: 3,
     title: "ابزار شارژی",
     href: "/categories/abzar-aalat-sharzhy-72",
     image: "/images/cat3.jpg",
-    className: "col-span-1 lg:col-span-1 lg:row-span-2", 
+    className: "col-span-1 lg:col-span-1 lg:row-span-2",
   },
   {
     id: 4,
     title: "ابزار کشاورزی",
     href: "/categories/abzaraalat-baghbany-wkshawrzy-71",
     image: "/images/cat4.jpg",
-    className: "col-span-1 lg:col-span-1 lg:row-span-1", 
+    className: "col-span-1 lg:col-span-1 lg:row-span-1",
   },
 
   // --- ردیف سوم و چهارم ---
@@ -38,28 +38,28 @@ const CATEGORIES = [
     title: "ابزار برقی",
     href: "/categories/abzaraalat-brqy-74",
     image: "/images/cat5.jpg",
-    className: "col-span-1 lg:col-span-1 lg:row-span-2", 
+    className: "col-span-1 lg:col-span-1 lg:row-span-2",
   },
   {
     id: 6,
     title: "ابزار جوش و برش",
     href: "/categories/abzaraalat-jwsh-wbrsh-75",
     image: "/images/cat6.jpg",
-    className: "col-span-1 sm:col-span-2 lg:col-span-2 lg:row-span-1", 
+    className: "col-span-1 sm:col-span-2 lg:col-span-2 lg:row-span-1",
   },
   {
     id: 7,
     title: "ابزارآلات دستی",
     href: "/categories/abzaraalat-dsty-73",
     image: "/images/cat7.jpg",
-    className: "col-span-1 lg:col-span-1 lg:row-span-2", 
+    className: "col-span-1 lg:col-span-1 lg:row-span-2",
   },
   {
     id: 8,
     title: "قفل و یراق آلات",
     href: "/categories/qfl-w-yraq-aalat-78",
     image: "/images/cat8.jpg",
-    className: "col-span-1 sm:col-span-2 lg:col-span-2 lg:row-span-1", 
+    className: "col-span-1 sm:col-span-2 lg:col-span-2 lg:row-span-1",
   },
 ];
 
@@ -75,19 +75,6 @@ export default function CategoryGrid() {
         </h2>
       </div>
 
-      {/* --- کانتینر شبکه/کاروسل --- */}
-      {/* تغییرات موبایل (Flex + Scroll):
-         1. flex: چیدمان خطی
-         2. overflow-x-auto: اسکرول افقی
-         3. snap-x snap-mandatory: برای اینکه وقتی کاربر اسکرول کرد، روی عکس‌ها قفل شود (حس اپلیکیشن)
-         4. pb-4: پدینگ پایین برای اینکه سایه دکمه‌ها بریده نشود
-         5. no-scrollbar: کلاس‌های مخفی کردن نوار اسکرول (در css سراسری یا کلاس‌های اینلاین)
-         
-         تغییرات دسکتاپ (Grid):
-         1. lg:grid: تبدیل به گرید
-         2. lg:overflow-visible: غیرفعال کردن اسکرول
-         3. lg:pb-0: حذف پدینگ اضافی
-      */}
       <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-4 w-full 
                       lg:grid lg:grid-cols-4 lg:auto-rows-[220px] lg:overflow-visible lg:pb-0 lg:gap-4
                       [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
@@ -98,13 +85,8 @@ export default function CategoryGrid() {
             href={cat.href}
             className={`
               relative group overflow-hidden rounded-2xl
-              /* استایل‌های کارت در موبایل (ثابت و یک‌اندازه) */
               min-w-[280px] h-[360px] flex-shrink-0 snap-center
-              
-              /* استایل‌های کارت در دسکتاپ (انعطاف‌پذیر و بر اساس گرید) */
               lg:min-w-0 lg:w-auto lg:h-auto lg:flex-shrink-1
-              
-              /* کلاس‌های گرید اختصاصی (فقط در دسکتاپ اعمال می‌شوند چون در موبایل flex است) */
               ${cat.className}
             `}
           >
@@ -113,6 +95,7 @@ export default function CategoryGrid() {
               alt={cat.title}
               fill
               className="object-cover transition-transform duration-700 group-hover:scale-110"
+              sizes="(max-width: 640px) 280px, (max-width: 1024px) 400px, 600px"
             />
 
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-90 group-hover:opacity-100 transition-opacity" />

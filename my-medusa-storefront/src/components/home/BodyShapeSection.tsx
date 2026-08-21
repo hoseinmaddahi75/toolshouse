@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 
@@ -11,6 +13,9 @@ const BRAND_IMAGES = [
 ];
 
 export default function BodyShapeSection() {
+  // تکرار آرایه برای ایجاد لوپ بی‌نهایت و روان
+  const infiniteBrands = [...BRAND_IMAGES, ...BRAND_IMAGES];
+
   return (
     <section className="w-full bg-[#FAFAFA] flex flex-col items-center pt-[80px] pb-[80px] overflow-hidden relative">
       
@@ -22,48 +27,72 @@ export default function BodyShapeSection() {
         <p className="text-[14px] text-[#3C3D45] leading-loose max-w-[650px] mb-8">
           خانه ابزار، واردکننده مستقیم و فروشنده بهترین و معتبرترین برندهای ابزار و یراق در ایران است. ما متعهد هستیم که باکیفیت ترین محصولات را برای شما مشتریان عزیزمان فراهم کنیم.
         </p>
-        <button className="flex items-center gap-2 bg-black text-white px-8 py-3 rounded-full hover:bg-gray-800 transition-colors">
+        
+        <Link href="/categories/brnd-ha-2329" className="flex items-center gap-2 bg-black text-white px-8 py-3 rounded-full hover:bg-gray-800 transition-colors">
           <span className="text-[14px] font-medium">مشاهده برندها</span>
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M5 12h14M12 5l7 7-7 7"/>
           </svg>
-        </button>
+        </Link>
       </div>
 
-      {/* --- بخش کاروسل بی‌پایان --- */}
-      <div className="w-full relative">
-        {/* کانتینر اصلی که انیمیشن روی آن اجرا می‌شود */}
-        <div className="flex w-max animate-scroll gap-6 px-3">
-          
-          {/* سری اول تصاویر (6 عدد) */}
-          {BRAND_IMAGES.map((src, index) => (
-            <div key={`first-${index}`} className="relative w-[250px] h-[194px] flex-shrink-0 rounded-2xl overflow-hidden shadow-sm">
+      {/* --- بخش کاروسل بی‌نهایت --- */}
+      <div className="carousel-wrapper w-full relative group">
+        
+        {/* کانتینر متحرک کاروسل */}
+        <div className="animate-infinite-scroll flex w-max gap-6 px-3">
+          {infiniteBrands.map((src, index) => (
+            <div 
+              key={index} 
+              className="group/card relative w-[250px] h-[194px] flex-shrink-0 rounded-2xl overflow-hidden shadow-sm cursor-pointer bg-white"
+            >
               <Image
                 src={src}
                 alt={`Brand ${index + 1}`}
                 fill
-                className="object-cover"
+                sizes="250px"
+                className="object-cover transition-all duration-500 ease-out group-hover/card:scale-110 group-hover/card:grayscale-[40%]"
               />
-            </div>
-          ))}
-
-          {/* سری دوم تصاویر (دقیقاً تکرار سری اول برای پر کردن فضای خالی) */}
-          {BRAND_IMAGES.map((src, index) => (
-            <div key={`second-${index}`} className="relative w-[250px] h-[194px] flex-shrink-0 rounded-2xl overflow-hidden shadow-sm">
-              <Image
-                src={src}
-                alt={`Brand Repeat ${index + 1}`}
-                fill
-                className="object-cover"
-              />
+              {/* هاله رنگی ملایم هنگام هاور */}
+              <div className="absolute inset-0 bg-blue-900/0 group-hover/card:bg-blue-900/10 transition-colors duration-500 pointer-events-none"></div>
             </div>
           ))}
         </div>
 
-        {/* لایه گرادینت برای محو شدن کناره‌ها (اختیاری) */}
+        {/* لایه محو‌کننده کناره‌ها برای زیبایی بیشتر */}
         <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-[#FAFAFA] to-transparent z-10 pointer-events-none"></div>
         <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-[#FAFAFA] to-transparent z-10 pointer-events-none"></div>
       </div>
+
+      {/* --- استایل‌های انیمیشن --- */}
+      <style jsx global>{`
+        /* انیمیشن برای سایت‌های LTR */
+        @keyframes infiniteScroll {
+          0% { transform: translateX(0%); }
+          100% { transform: translateX(50%); }
+        }
+
+        /* انیمیشن مخصوص سایت‌های RTL (مثل خانه ابزار) */
+        @keyframes infiniteScrollRtl {
+          0% { transform: translateX(0%); }
+          100% { transform: translateX(50%); }
+        }
+
+        .animate-infinite-scroll {
+          /* سرعت حرکت را می‌توانید با تغییر 40s کم و زیاد کنید */
+          animation: infiniteScroll 40s linear infinite;
+        }
+
+        /* توقف روان کاروسل هنگام هاور روی کل بخش */
+        .carousel-wrapper:hover .animate-infinite-scroll {
+          animation-play-state: paused !important;
+        }
+
+        /* اعمال جهت درست انیمیشن برای فارسی */
+        [dir="rtl"] .animate-infinite-scroll {
+          animation-name: infiniteScrollRtl;
+        }
+      `}</style>
     </section>
   );
 }

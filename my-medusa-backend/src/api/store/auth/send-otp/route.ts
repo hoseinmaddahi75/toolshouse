@@ -18,7 +18,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
   
   if (pattern) {
     try {
-      await sendMelliPayamakPattern(phone, pattern, { code: code });
+      await sendMelliPayamakPattern(phone, pattern, [code]);
     } catch (err) {
       console.error("خطا در ارسال پیامک", err);
     }

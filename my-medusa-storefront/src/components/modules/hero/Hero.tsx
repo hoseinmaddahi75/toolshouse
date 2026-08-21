@@ -34,7 +34,8 @@ export default function Hero() {
             alt="Hero Main Model"
             fill
             className="object-cover"
-            priority
+            priority={true}
+            sizes="(max-width: 768px) 100vw, 50vw"
           />
         </div>
 
@@ -117,6 +118,7 @@ export default function Hero() {
                         alt={`Carousel ${index + 1}`}
                         fill
                         className="object-cover"
+                        priority={true}
                         />
                     </div>
                   ))}

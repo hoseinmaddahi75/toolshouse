@@ -51,15 +51,15 @@ export default async function Footer() {
           {/* ستون ۱ */}
           <div className="lg:w-[32%] lg:pl-16 relative">
             
-            <div className="mb-6 relative w-40 h-12 rounded-lg">
-              <Image 
-                src="/images/logo.png" 
-                alt="Toolshouse" 
-                fill
-                className="object-contain object-right"
-                priority
-              />
-            </div>
+            <div className="mb-6 relative w-40 h-12 bg-white rounded-lg p-2">
+  <Image 
+    src="/images/logo.png" 
+    alt="Toolshouse" 
+    fill
+    className="object-contain object-right"
+    priority
+  />
+</div>
             
             <p className="text-gray-400 text-sm leading-7 mb-6 text-justify">
               فروشگاه اینترنتی ابزار فروشی حسینی، ارائه دهنده بهترین ابزار آلات صنعتی و ساختمانی با کیفیت عالی و قیمت مناسب.

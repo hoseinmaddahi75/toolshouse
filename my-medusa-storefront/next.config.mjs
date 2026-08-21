@@ -5,32 +5,20 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
+    unoptimized: process.env.NODE_ENV === 'development',
     remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "api.toolshouse.ir",
+        pathname: "/**",
+      },
       {
         protocol: "http",
         hostname: "localhost",
         port: "9000",
         pathname: "/**",
       },
-      {
-        protocol: "http",
-        hostname: "127.0.0.1",
-        port: "9000",
-        pathname: "/**",
-      },
-      // 👇 این ۴ خط اضافه شد تا استورفرانت بتونه به بک‌اند داخلی داکر وصل بشه 👇
-      {
-        protocol: "http",
-        hostname: "backend",
-        port: "9000",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "**",
-      },
     ],
-    unoptimized: true,
   },
 };
 
