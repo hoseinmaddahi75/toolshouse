@@ -69,7 +69,7 @@ export async function POST(request: Request) {
     const data = await res.json();
     const products = data.products || [];
 
-    const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://daroobarg.com";
+    const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://toolshouse.ir";
     const torobProducts: any[] = [];
 
     products.forEach((product: any) => {

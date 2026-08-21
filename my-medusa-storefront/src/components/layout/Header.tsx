@@ -2,17 +2,18 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useCartStore } from "@/lib/store";
-import CartDrawer from "@/components/modules/cart/CartDrawer";
 import { useEffect, useState } from "react";
 import { useWishlistStore } from "@/lib/wishlist-store";
-import { Heart, X, Menu } from "lucide-react"; 
-import SearchModal from "@/components/search/search-modal";
+import { Heart, X } from "lucide-react";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
-
 import { MegaMenu } from "@/components/layout/MegaMenu";
 import { CATEGORIES } from "@/lib/categories";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
+const CartDrawer = dynamic(() => import("@/components/modules/cart/CartDrawer"), { ssr: false });
+const SearchModal = dynamic(() => import("@/components/search/search-modal"), { ssr: false });
 
 const MENU_ITEMS = [
   { title: "خانه", href: "/" },
@@ -37,15 +38,12 @@ export default function Header() {
   return (
     <>
       <header className="sticky top-0 z-50 w-full h-[90px] bg-background border-b border-[#E4E4E7] flex items-center justify-between px-4 md:px-0 transition-all">
-        
-        {/* --- بخش راست: فقط لوگو --- */}
         <div className="flex items-center md:mr-[48px]">
-          <Link href="/">
+          <Link href="/" aria-label="صفحه اصلی">
             <Image src="/images/logo.png" alt="Logo" width={98} height={42} className="w-[80px] h-auto md:w-[160px] md:h-[62px] object-cover rounded-md md:rounded-2xl" priority />
           </Link>
         </div>
 
-        {/* --- بخش وسط: منو دسکتاپ (طراحی کپسولی) --- */}
         <nav className="hidden md:flex items-center justify-center gap-[16px] px-[16px] h-[40px] bg-[#FAFAFA] rounded-full border border-[#E4E4E7]">
           <MegaMenu />
           
@@ -58,16 +56,12 @@ export default function Header() {
           ))}
         </nav>
 
-        {/* --- بخش چپ: آیکون‌ها --- */}
         <div className="md:ml-[48px] flex items-center gap-[4px] md:gap-[8px]">
-          
-          {/* دکمه سرچ (مخفی در موبایل، نمایش در دسکتاپ) */}
-          <button onClick={() => setIsSearchOpen(true)} className="hidden md:flex items-center justify-center w-[40px] h-[40px] rounded-full hover:bg-gray-100 transition-colors">
+          <button onClick={() => setIsSearchOpen(true)} aria-label="جستجو" className="hidden md:flex items-center justify-center w-[40px] h-[40px] rounded-full hover:bg-gray-100 transition-colors">
             <Image src="/icons/search.svg" alt="Search" width={20} height={20} className="w-[20px] h-[20px]" />
           </button>
 
-          {/* دکمه سبد خرید (مخفی در موبایل، نمایش در دسکتاپ) */}
-          <button onClick={toggleCart} className="hidden md:flex relative items-center justify-center w-[40px] h-[40px] rounded-full hover:bg-gray-100 transition-colors">
+          <button onClick={toggleCart} aria-label="سبد خرید" className="hidden md:flex relative items-center justify-center w-[40px] h-[40px] rounded-full hover:bg-gray-100 transition-colors">
             <Image src="/icons/cart.svg" alt="Cart" width={20} height={20} className="w-[20px] h-[20px]" />
             {isMounted && cartItems.length > 0 && (
               <span className="absolute top-[2px] right-[2px] flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
@@ -76,8 +70,7 @@ export default function Header() {
             )}
           </button>
 
-          {/* دکمه علاقه‌مندی‌ها (نمایش در موبایل و دسکتاپ) */}
-          <Link href="/wishlist" className="relative flex items-center justify-center w-[40px] h-[40px] rounded-full hover:bg-gray-100 transition-colors group">
+          <Link href="/wishlist" aria-label="مشاهده علاقه‌مندی‌ها" className="relative flex items-center justify-center w-[40px] h-[40px] rounded-full hover:bg-gray-100 transition-colors group">
              <Heart className="w-[20px] h-[20px] text-gray-900 group-hover:text-red-500 transition-colors" />
              {isMounted && wishlistItems.length > 0 && (
                 <span className="absolute top-[2px] right-[2px] flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white animate-in zoom-in">
@@ -86,31 +79,25 @@ export default function Header() {
              )}
           </Link>
 
-          {/* دکمه پروفایل (نمایش در موبایل و دسکتاپ) */}
-          <Link href="/account">
+          <Link href="/account" aria-label="حساب کاربری">
              <IconButton icon="/icons/user.svg" alt="Profile" />
           </Link>
         </div>
       </header>
 
-      {/* ================= منوی موبایل: دیزاین جدید، تمیز و مرتب ================= */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-[70] flex md:hidden">
-          {/* پس‌زمینه تاریک پشت منو */}
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onClick={() => setIsMobileMenuOpen(false)} />
           
           <div className="relative bg-white w-[300px] h-full shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-            {/* هدرِ منوی موبایل */}
             <div className="flex items-center justify-between p-6 border-b border-gray-100 bg-gray-50/50">
               <span className="font-bold text-lg text-gray-800">فهرست سایت</span>
-              <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 bg-white border border-gray-200 hover:bg-gray-100 rounded-full transition-colors">
+              <button onClick={() => setIsMobileMenuOpen(false)} aria-label="بستن منو" className="p-2 bg-white border border-gray-200 hover:bg-gray-100 rounded-full transition-colors">
                 <X className="w-5 h-5 text-gray-600" />
               </button>
             </div>
 
-            {/* محتوای اسکرول‌شونده */}
             <div className="flex-1 overflow-y-auto custom-scrollbar p-6 pb-24">
-                {/* لینک‌های اصلی سایت */}
                 <nav className="flex flex-col gap-2 mb-6">
                 {MENU_ITEMS.map((item, index) => (
                     <Link 
@@ -124,7 +111,6 @@ export default function Header() {
                 ))}
                 </nav>
                 
-                {/* آکاردئون زیبای دسته‌بندی‌ها */}
                 <div className="border-t border-gray-100 pt-5">
                 <p className="text-xs font-bold text-gray-400 mb-3 tracking-wider">دسته‌بندی ابزارآلات</p>
                 <Accordion type="single" collapsible className="w-full">
@@ -160,7 +146,6 @@ export default function Header() {
                 </div>
             </div>
             
-            {/* فوتر کوچک پایین منوی موبایل */}
             <div className="mt-auto p-4 border-t border-gray-100 bg-gray-50 text-center">
                <span className="text-xs font-bold text-gray-400">خانه ابزار - مرجع تخصصی ابزارآلات</span>
             </div>
@@ -168,7 +153,6 @@ export default function Header() {
         </div>
       )}
 
-      {/* ================= مودال‌ها و نویگیشن پایین ================= */}
       <CartDrawer />
       <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
       <MobileBottomNav 
@@ -179,7 +163,6 @@ export default function Header() {
   );
 }
 
-// کامپوننت داخلی آیکون‌های شما
 function IconButton({ icon, alt }: { icon: string; alt: string }) {
   return (
     <button className="flex items-center justify-center w-[40px] h-[40px] rounded-full hover:bg-gray-100 transition-colors" aria-label={alt}>

@@ -91,7 +91,6 @@ const AboutSection = () => {
                         fill
                         className="object-cover rounded-[16px]"
                         sizes="(max-width: 768px) 50vw, 20vw"
-                        unoptimized
                     />
                 </div>
                 <div className="relative w-full aspect-[4/3] flex-1">
@@ -101,7 +100,6 @@ const AboutSection = () => {
                         fill
                         className="object-cover rounded-[16px]"
                         sizes="(max-width: 768px) 50vw, 20vw"
-                        unoptimized
                     />
                 </div>
             </div>
@@ -114,7 +112,6 @@ const AboutSection = () => {
                     fill
                     className="object-cover rounded-[16px]"
                     sizes="(max-width: 768px) 50vw, 20vw"
-                    unoptimized
                 />
             </div>
 

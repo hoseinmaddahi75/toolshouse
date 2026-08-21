@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     const data = await res.json();
     const products = data.products || [];
 
-    const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || "http://localhost:3000";
+    const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://toolshouse.ir";
 
     const emallsFeed = products.map((product: any) => {
       let bestPrice = Infinity;

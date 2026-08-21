@@ -21,6 +21,7 @@ export default function Hero() {
           fill
           className="object-contain object-left-top"
           priority
+          sizes="(max-width: 1024px) 200px, 821px"
         />
       </div>
 
@@ -57,9 +58,6 @@ export default function Hero() {
             </p>
 
             {/* --- ۱. تگ‌ها (اصلاح شده برای اسکرول افقی در موبایل) --- */}
-            {/* flex-nowrap: جلوگیری از شکستن خط */}
-            {/* overflow-x-auto: فعال کردن اسکرول */}
-            {/* no-scrollbar (کاستوم): مخفی کردن نوار اسکرول */}
             <div className="flex flex-nowrap overflow-x-auto items-center gap-[8px] mb-8 lg:mb-10 w-full pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
               <TagButton text="تنوع بالای ابزارها" />
               <TagButton text="برقی و شارژی" />
@@ -75,12 +73,9 @@ export default function Hero() {
             </div>
 
             {/* --- ۲. دکمه CTA (اصلاح سایز در موبایل) --- */}
-            {/* w-auto: حذف w-full تا کل عرض را نگیرد */}
             <div className="flex items-center gap-4 w-auto">
               <Link
                 href="/store"
-                // w-[180px]: عرض فیکس کوچکتر برای موبایل
-                // lg:w-[209px]: عرض اصلی برای دسکتاپ
                 className="w-[180px] lg:w-[209px] h-[48px] bg-[#febd1b] text-black rounded-[8px] flex items-center justify-center gap-3 hover:bg-[#e3a305] transition-colors shadow-md flex-shrink-0"
               >
                 <span className="text-[14px] lg:text-[16px] font-medium">مشاهده محصولات</span>
@@ -94,6 +89,7 @@ export default function Hero() {
                     alt="arrow decoration" 
                     fill
                     className="object-contain"
+                    sizes="(max-width: 1024px) 40px, 50px"
                  />
               </div>
             </div>
@@ -101,7 +97,6 @@ export default function Hero() {
           </div>
 
           {/* --- ۳. بخش کاروسل (اصلاح سایز تصاویر) --- */}
-          {/* ارتفاع در موبایل 220 و در دسکتاپ 312 */}
           <div className="relative w-full h-[220px] lg:h-[312px] mt-8 lg:mt-8"> 
              
              <div className="absolute right-0 bottom-0 h-full w-[100vw] rounded-tr-none lg:rounded-tr-2xl lg:rounded-tl-md overflow-hidden flex items-center">
@@ -110,15 +105,14 @@ export default function Hero() {
                   
                   {/* سری اول */}
                   {CAROUSEL_IMAGES.map((src, index) => (
-                    // عرض موبایل 210 و دسکتاپ 300
-                    // ارتفاع موبایل 220 و دسکتاپ 312
                     <div key={`set1-${index}`} className="relative h-[220px] w-[210px] lg:h-[312px] lg:w-[300px] flex-shrink-0 rounded-xl lg:rounded-2xl overflow-hidden">
                         <Image
                         src={src}
                         alt={`Carousel ${index + 1}`}
                         fill
                         className="object-cover"
-                        priority={true}
+                        priority={index <= 1} // فقط دو عکس اول در اولویت دانلود باشند
+                        sizes="(max-width: 1024px) 210px, 300px"
                         />
                     </div>
                   ))}
@@ -131,6 +125,8 @@ export default function Hero() {
                         alt={`Carousel Duplicate ${index + 1}`}
                         fill
                         className="object-cover"
+                        loading="lazy"
+                        sizes="(max-width: 1024px) 210px, 300px"
                         />
                     </div>
                   ))}
@@ -146,6 +142,7 @@ export default function Hero() {
                 alt="Detail Circle"
                 fill
                 className="object-contain animate-spin-slow"
+                sizes="(max-width: 1024px) 70px, 104px"
             />
           </div>
 
@@ -157,7 +154,6 @@ export default function Hero() {
 
 function TagButton({ text }: { text: string }) {
   return (
-    // flex-shrink-0: حیاتی برای اینکه دکمه‌ها در حالت اسکرول جمع نشوند
     <button className="h-[40px] px-[24px] py-[12px] bg-[#F7F7F8] border border-[#E7E7E8] rounded-full text-[14px] text-[#0B0C17] hover:bg-gray-100 transition-colors whitespace-nowrap flex-shrink-0">
       {text}
     </button>

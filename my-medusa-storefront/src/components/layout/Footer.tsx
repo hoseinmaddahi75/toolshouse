@@ -180,7 +180,7 @@ export default async function Footer() {
         {/* فوتر پایین */}
         <div className="mt-16 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-8">
           
-          <p className="text-xs text-gray-500 text-center md:text-right">
+          <p className="text-xs text-gray-400 text-center md:text-right">
             © 1405 تمامی حقوق محفوظ است. طراحی و توسعه توسط{" "}
             <a 
               href="https://hmaddahi.ir" 
