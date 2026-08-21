@@ -20,8 +20,6 @@ export default function DiscountedProducts({ products }: DiscountedProductsProps
 
   if (!products || products.length === 0) return null;
 
-  // فقط زمانی لوپ فعال شود که تعداد محصولات بیشتر از تعداد نمایش (۵) باشد
-  // این جلوی پرش‌های ناگهانی و باگ Swiper را می‌گیرد
   const enableLoop = products.length > 5;
 
   return (
