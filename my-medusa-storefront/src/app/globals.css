@@ -252,3 +252,12 @@
   display: block;
   overflow-x: auto;
 }
+
+
+/* --- رفع خطای انیمیشن سنگین Swiper در PageSpeed --- */
+.swiper-pagination-bullet {
+  transition: transform 0.3s ease, opacity 0.3s ease, background-color 0.3s ease !important;
+}
+.swiper-pagination-bullet-active {
+  transform: scale(1.2) !important;
+}

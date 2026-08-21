@@ -44,7 +44,8 @@ export default function DiscountedProducts({ products }: DiscountedProductsProps
         <div className="flex items-center gap-3">
             <button 
                 onClick={() => swiperInstance?.slidePrev()}
-                disabled={!enableLoop && swiperInstance?.isBeginning} // غیرفعال کردن دکمه اگر لوپ نیست و اول لیستیم
+                disabled={!enableLoop && swiperInstance?.isBeginning}
+                aria-label="اسلاید قبلی" // اضافه شدن نام برای ربات‌های گوگل
                 className="w-[44px] h-[44px] flex items-center justify-center border border-[#E7E7E8] rounded-[12px] hover:bg-black hover:text-white hover:border-black transition-all duration-300 group disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transform rotate-180">
@@ -54,7 +55,8 @@ export default function DiscountedProducts({ products }: DiscountedProductsProps
 
             <button 
                 onClick={() => swiperInstance?.slideNext()}
-                disabled={!enableLoop && swiperInstance?.isEnd} // غیرفعال کردن دکمه اگر لوپ نیست و آخر لیستیم
+                disabled={!enableLoop && swiperInstance?.isEnd}
+                aria-label="اسلاید بعدی" // اضافه شدن نام برای ربات‌های گوگل
                 className="w-[44px] h-[44px] flex items-center justify-center border border-[#E7E7E8] rounded-[12px] hover:bg-black hover:text-white hover:border-black transition-all duration-300 group disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transform rotate-180">
@@ -67,13 +69,13 @@ export default function DiscountedProducts({ products }: DiscountedProductsProps
       {/* --- کاروسل --- */}
       <div className="w-full">
         <Swiper
-            key={products.length} // کلید برای رفرش شدن اسلایدر هنگام تغییر تعداد
+            key={products.length}
             modules={[Navigation, Autoplay]}
             onSwiper={(swiper) => setSwiperInstance(swiper)}
             spaceBetween={16}
             slidesPerView={5}
-            loop={enableLoop} // شرط لوپ اصلاح شد
-            speed={800} // سرعت انیمیشن (میلی‌ثانیه) - هرچه بیشتر، نرم‌تر
+            loop={enableLoop}
+            speed={800}
             className="!pb-10"
             breakpoints={{
                 0: { slidesPerView: 1.5, spaceBetween: 10 },

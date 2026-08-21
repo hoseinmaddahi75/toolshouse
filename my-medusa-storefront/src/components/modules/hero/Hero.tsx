@@ -20,7 +20,6 @@ export default function Hero() {
           alt="Abstract Shape"
           fill
           className="object-contain object-left-top"
-          priority
           sizes="(max-width: 1024px) 200px, 821px"
         />
       </div>
@@ -111,7 +110,7 @@ export default function Hero() {
                         alt={`Carousel ${index + 1}`}
                         fill
                         className="object-cover"
-                        priority={index <= 1} // فقط دو عکس اول در اولویت دانلود باشند
+                        priority={index === 0}
                         sizes="(max-width: 1024px) 210px, 300px"
                         />
                     </div>

@@ -61,7 +61,7 @@ const LatestNews = ({ posts }: { posts: BlogPost[] }) => {
                   {post.excerpt}
                 </p>
 
-                <div className="mt-auto pt-4 border-t border-gray-50 flex items-center text-[#9D9EA2] text-[14px]">
+                <div className="mt-auto pt-4 border-t border-gray-50 flex items-center text-[#737373] text-[14px]">
                   <svg className="w-4 h-4 ml-2 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                   {new Date(post.published_at).toLocaleDateString('fa-IR', {
                     year: 'numeric',
