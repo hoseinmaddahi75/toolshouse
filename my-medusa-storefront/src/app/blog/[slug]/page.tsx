@@ -28,7 +28,7 @@ function cleanContent(content: string) {
 }
 
 // ----------------------------------------------------------------------
-// ۱. تولید متادیتا، اُپن‌گراف (Open Graph) و توییتر کارد برای مقاله (اضافه شده از داروبرگ)
+// ۱. تولید متادیتا، اُپن‌گراف (Open Graph) و توییتر کارد برای مقاله
 // ----------------------------------------------------------------------
 export async function generateMetadata(props: Props) {
   const params = await props.params;
@@ -37,7 +37,7 @@ export async function generateMetadata(props: Props) {
   // 🟢 تغییر نام به مجله خانه ابزار
   if (!post) return { title: "مطلب یافت نشد | مجله خانه ابزار" };
 
-  const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://khanehabzar.com";
+  const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://toolshouse.ir";
   const postUrl = `${baseUrl}/blog/${params.slug}`;
   const ogImage = post.image || `${baseUrl}/images/default-blog-og.jpg`; 
 
@@ -107,8 +107,8 @@ export default async function BlogPostPage(props: Props) {
   const categoryTitle = getCategoryLabel(post.category);
   const cleanHTML = cleanContent(post.content);
 
-  // --- ساخت خودکار اسکیما برای مقاله (اضافه شده از داروبرگ) ---
-  const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://khanehabzar.com";
+  // --- ساخت خودکار اسکیما برای مقاله ---
+  const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://toolshouse.ir";
   const postUrl = `${baseUrl}/blog/${params.slug}`;
 
   const jsonLd = [

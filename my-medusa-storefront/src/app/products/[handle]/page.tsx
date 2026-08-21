@@ -27,7 +27,7 @@ export async function generateMetadata(props: ProductPageProps): Promise<Metadat
   const seoDescription = product.metadata?.seo_description || product.subtitle || "خرید اینترنتی انواع ابزارآلات از خانه ابزار";
   
   // آدرس دقیق این صفحه (برای تگ Canonical و OG Url)
-  const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://khanehabzar.com";
+  const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://toolshouse.ir";
   const productUrl = `${baseUrl}/products/${product.handle}`;
   
   // تصویر اصلی محصول برای شبکه‌های اجتماعی
@@ -78,7 +78,7 @@ export default async function ProductPage(props: ProductPageProps) {
   }
 
   // --- ساخت خودکار دیتای ساخت‌یافته (Schema Markup - Product) ---
-  const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://khanehabzar.com";
+  const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://toolshouse.ir";
   
   const priceAmount = product.variants?.[0]?.prices?.[0]?.amount || 0; 
   const isInStock = product.variants?.some((v: any) => v.inventory_quantity > 0);

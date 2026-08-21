@@ -96,8 +96,9 @@ export default function CategorySelector({ selectedIds, onChange, token }: Categ
       if (!token) return;
 
       try {
+        // تغییر طلایی اینجاست: استفاده از parent_category_id=null و حذف fields
         const res = await fetch(
-          `${BASE_URL}/admin/product-categories?include_descendants_tree=true&fields=id,name,parent_category_id,category_children`,
+          `${BASE_URL}/admin/product-categories?parent_category_id=null&include_descendants_tree=true`,
           {
             headers: {
               "Content-Type": "application/json",
@@ -110,9 +111,9 @@ export default function CategorySelector({ selectedIds, onChange, token }: Categ
         if (!res.ok) return;
 
         const data = await res.json();
-        const allCategories = data.product_categories || [];
-        const roots = allCategories.filter((cat: Category) => cat.parent_category_id === null);
-        setRootCategories(roots);
+        // مدوسا الان دقیقاً فقط دسته‌بندی‌های اصلی رو با بچه‌هاشون برمی‌گردونه
+        // دیگه نیازی به filter کردن توی فرانت‌اند نیست!
+        setRootCategories(data.product_categories || []);
       } catch {
         // silently fail — categories are optional
       } finally {

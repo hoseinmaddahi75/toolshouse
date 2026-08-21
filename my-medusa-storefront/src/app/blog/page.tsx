@@ -6,16 +6,14 @@ import BlogSidebar from "@/components/blog/BlogSidebar";
 import { CalendarIcon, UserIcon, ArrowLeftIcon, ChevronRightIcon, ChevronLeftIcon } from "@heroicons/react/24/outline";
 import { getCategoryLabel } from "@/lib/constants";
 
-// 🟢 جلوگیری از کش شدن لیست مقالات تا جستجو همیشه کار کند
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export const metadata = {
-  title: "مجله مد و استایل رگال | وبلاگ",
-  description: "جدیدترین مقالات آموزشی در حوزه مد، فشن و استایل آقایان و بانوان",
+  title: "مجله خانه ابزار | وبلاگ",
+  description: "جدیدترین مقالات آموزشی در حوزه ابزار و یراق آلات را در مجله خانه ابزار بخوانید",
 };
 
-// 🟢 تابع نرمال‌سازی حروف برای سرچ دقیق‌تر (اضافه شده از داروبرگ)
 function normalizeText(str?: string) {
   if (!str) return "";
   return str.replace(/ك/g, "ک").replace(/ي/g, "ی").replace(/ئ/g, "ی").toLowerCase().trim();

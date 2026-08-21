@@ -5,8 +5,6 @@ import StoreBreadcrumb from "@/components/store/store-breadcrumb";
 import Pagination from "@/components/store/pagination";
 import { MEDUSA_BACKEND_URL } from "@/lib/constants";
 
-export const dynamic = "force-dynamic";
-
 // مترجم قیمت محصولات (مشابه صفحه فروشگاه)
 const mapMedusaProductToType = (medusaProduct: any) => {
   return {
@@ -72,7 +70,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     return { title: "دسته‌بندی یافت نشد | خانه ابزار" };
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://khanehabzar.com";
+  const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://toolshouse.ir";
   // 🟢 مسیر دسته‌بندی هماهنگ با سایت
   const categoryUrl = `${baseUrl}/categories/${resolvedParams.handle}`; 
 
@@ -143,7 +141,7 @@ export default async function CategoryPage({ params, searchParams }: Props) {
   const totalPages = Math.ceil(count / limit);
 
   // --- ساخت خودکار اسکیمای کالکشن و لیست محصولات (ItemList & CollectionPage) ---
-  const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://khanehabzar.com";
+  const baseUrl = process.env.NEXT_PUBLIC_FRONTEND_URL || "https://toolshouse.ir";
   const categoryUrl = `${baseUrl}/categories/${handle}`;
 
   const jsonLd = {

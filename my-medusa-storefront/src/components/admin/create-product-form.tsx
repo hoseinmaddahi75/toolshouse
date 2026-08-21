@@ -212,7 +212,7 @@ export default function CreateProductForm({ token }: { token: string }) {
           return html.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim();
       };
 
-      const finalSeoTitle = seoTitle.trim() || `${title} | داروبرگ`;
+      const finalSeoTitle = seoTitle.trim() || `${title} | خانه ابزار`;
       const finalSeoDesc = seoDescription.trim() || stripHtml(subtitle).substring(0, 160);
 
       const metadata: any = {
@@ -417,7 +417,7 @@ export default function CreateProductForm({ token }: { token: string }) {
             <div className="space-y-4">
                <div>
                   <label className="text-sm font-medium block mb-1">عنوان سئو (Meta Title)</label>
-                  <Input value={seoTitle} onChange={e => setSeoTitle(e.target.value)} placeholder={`${title || "نام محصول"} | داروبرگ`} />
+                  <Input value={seoTitle} onChange={e => setSeoTitle(e.target.value)} placeholder={`${title || "نام محصول"} | خانه ابزار`} />
                </div>
                <div>
                   <label className="text-sm font-medium block mb-1">توضیحات سئو (Meta Description)</label>

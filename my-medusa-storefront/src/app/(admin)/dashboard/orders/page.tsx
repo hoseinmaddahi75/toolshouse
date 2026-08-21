@@ -21,7 +21,6 @@ export default async function AdminOrdersPage({
   const cookieStore = await cookies();
   const token = cookieStore.get("_medusa_admin_token")?.value;
 
-  // 🟢 تعریف متغیر محلی backendUrl با استفاده از کانستنت پروژه (منتقل شده از داروبرگ)
   const backendUrl = MEDUSA_BACKEND_URL;
 
   let orders = [];
