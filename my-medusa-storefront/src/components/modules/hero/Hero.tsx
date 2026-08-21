@@ -102,16 +102,16 @@ export default function Hero() {
                 
                 <div className="flex w-max animate-scroll gap-4 lg:gap-10 rounded">
                   
-                  {/* سری اول */}
+                  {/* سری اول در Hero.tsx */}
 {CAROUSEL_IMAGES.map((src, index) => (
-  <div key={`set1-${index}`} className="relative h-[220px] w-[210px] lg:h-[312px] lg:w-[300px] flex-shrink-0 rounded-xl lg:rounded-2xl overflow-hidden">
+  <div key={`set1-${index}`} className="relative h-[220px] ...">
       <Image
-      src={src}
-      alt={`Carousel ${index + 1}`}
-      fill
-      className="object-cover"
-      priority={index <= 2} 
-      sizes="(max-width: 1024px) 210px, 300px"
+        src={src}
+        alt={`Carousel ${index + 1}`}
+        fill
+        className="object-cover"
+        priority={true}
+        sizes="(max-width: 1024px) 210px, 300px"
       />
   </div>
 ))}
