@@ -29,10 +29,10 @@ export function MobileBottomNav({ onOpenSearch, onOpenMenu }: MobileBottomNavPro
       <Link 
         href="/" 
         className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
-          isActive("/") ? "text-primary font-bold" : "text-muted-foreground hover:text-foreground"
+          isActive("/") ? "text-gray-900 font-bold" : "text-gray-500 hover:text-gray-900"
         }`}
       >
-        <Home className="w-5 h-5 mb-1" />
+        <Home className={`w-5 h-5 mb-1 ${isActive("/") ? "text-primary" : ""}`} />
         <span className="text-[11px]">خانه</span>
       </Link>
 
@@ -40,26 +40,26 @@ export function MobileBottomNav({ onOpenSearch, onOpenMenu }: MobileBottomNavPro
       <Link 
         href="/store" 
         className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
-          isActive("/store") ? "text-primary font-bold" : "text-muted-foreground hover:text-foreground"
+          isActive("/store") ? "text-gray-900 font-bold" : "text-gray-500 hover:text-gray-900"
         }`}
       >
-        <Store className="w-5 h-5 mb-1" />
+        <Store className={`w-5 h-5 mb-1 ${isActive("/store") ? "text-primary" : ""}`} />
         <span className="text-[11px]">فروشگاه</span>
       </Link>
 
-      {/* ۳. جستجو (به صورت دکمه که مودال جستجو رو باز می‌کنه) */}
+      {/* ۳. جستجو */}
       <button 
         onClick={onOpenSearch}
-        className="flex flex-col items-center justify-center flex-1 h-full text-muted-foreground hover:text-foreground transition-colors"
+        className="flex flex-col items-center justify-center flex-1 h-full text-gray-500 hover:text-gray-900 transition-colors"
       >
         <Search className="w-5 h-5 mb-1" />
         <span className="text-[11px]">جستجو</span>
       </button>
 
-      {/* ۴. سبد خرید (با قابلیت نمایش تعداد آیتم‌ها) */}
+      {/* ۴. سبد خرید */}
       <button 
         onClick={toggleCart}
-        className="relative flex flex-col items-center justify-center flex-1 h-full text-muted-foreground hover:text-foreground transition-colors"
+        className="relative flex flex-col items-center justify-center flex-1 h-full text-gray-500 hover:text-gray-900 transition-colors"
       >
         <div className="relative">
           <ShoppingBag className="w-5 h-5 mb-1" />
@@ -72,10 +72,10 @@ export function MobileBottomNav({ onOpenSearch, onOpenMenu }: MobileBottomNavPro
         <span className="text-[11px]">سبد خرید</span>
       </button>
 
-      {/* ۵. منوی همبرگر (برای باز کردن دراور دسته‌بندی‌ها) */}
+      {/* ۵. منوی همبرگر */}
       <button 
         onClick={onOpenMenu}
-        className="flex flex-col items-center justify-center flex-1 h-full text-muted-foreground hover:text-foreground transition-colors"
+        className="flex flex-col items-center justify-center flex-1 h-full text-gray-500 hover:text-gray-900 transition-colors"
       >
         <Menu className="w-5 h-5 mb-1" />
         <span className="text-[11px]">فهرست</span>
